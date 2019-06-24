@@ -10,6 +10,7 @@
 #' @references 
 #' @keywords package
 #' @import tcltk
+#' @import tcltk2
 #' @import Rcpp
 #' @import openxlsx
 #' @import tidyr
