@@ -1,0 +1,172 @@
+
+
+
+
+windows_filename<- function(stringX){
+  stringX<-stringr::str_remove_all(stringX,"[><*?:\\/\\\\|]")
+  stringX<-gsub("\"", "", stringX)
+  if (nchar(stringX)>=100){stringX=strtrim(stringX,100)}
+  return(stringX)
+  
+}
+windows_filename2<- function(stringX){
+  library(stringr)
+  stringX<-str_replace_all(stringX, "[^[:alnum:]]", " ")
+  stringX<-str_replace_all(stringX, ",", " ")
+  return(stringX)
+  
+}
+
+Advanced_building<-function(){
+  install.packages("ggplot2")
+  install.packages("pryr")
+  install.packages("devtools")
+  devtools::install_github("hadley/lineprof")
+  library(pryr)
+  object_size(1:10)
+  object_size(mean)
+  sizes <- sapply(0:50, function(n) object_size(seq_len(n)))
+  plot(0:50, sizes, xlab = "Length", ylab = "Size (bytes)", 
+       type = "s")
+  object_size(numeric())
+  plot(0:50, sizes - 40, xlab = "Length", 
+       ylab = "Bytes excluding overhead", type = "n")
+  abline(h = 0, col = "grey80")
+  abline(h = c(8, 16, 32, 48, 64, 128), col = "grey80")
+  abline(a = 0, b = 4, col = "grey90", lwd = 4)
+  lines(sizes - 40, type = "s")
+  mem_used()
+  
+  read_delim <- function(file, header = TRUE, sep = ",") {
+    # Determine number of fields by reading first line
+    first <- scan(file, what = character(1), nlines = 1,
+                  sep = sep, quiet = TRUE)
+    p <- length(first)
+    
+    # Load all fields as character vectors
+    all <- scan(file, what = as.list(rep("character", p)),
+                sep = sep, skip = if (header) 1 else 0, quiet = TRUE)
+    
+    # Convert from strings to appropriate types (never to factors)
+    all[] <- lapply(all, type.convert, as.is = TRUE)
+    
+    # Set column names
+    if (header) {
+      names(all) <- first
+    } else {
+      names(all) <- paste0("V", seq_along(all))
+    }
+    
+    # Convert list into data frame
+    as.data.frame(all)
+  }
+  
+  library(ggplot2)
+  write.csv(diamonds, "diamonds.csv", row.names = FALSE)
+  
+  library(lineprof)
+  
+  source("Z:\\George skyline results\\maldiimaging\\Maldi_imaging - Copy/R/read-delim.R")
+  prof <- lineprof(read_delim("diamonds.csv"))
+  shine(prof)
+}
+string_slice <- function(string, size) {
+  pat <- paste0('(?<=.{',size,'})')
+  strsplit(string, pat, perl=TRUE)
+}
+
+
+
+getMonomass <- function(formular){
+  Rdisop::getMolecule(formular)[["exactmass"]][1]}
+getMonomass_para <- function(i,formularlist){
+  return(Rdisop::getMolecule(formularlist[i])$exactmass)}
+setworkdir<-function(workdir){
+  if (dir.exists(workdir)==FALSE){dir.create(workdir)}
+  setwd(workdir)
+}
+
+
+
+
+parse_msl_par<-function(i,lib.txt,starts,stops,mz_L,mz_U){
+  is.odd <- function(x) x%%2 != 0
+  tmp<-lib.txt[starts[i]:stops[i]]
+  tmp<-tmp[grep("^\\(",tmp)]
+  tmp<-paste(tmp,collapse = "",sep="")
+  
+  #tmp<-parse_msp(tmp)
+  tmp <- data.frame((tmp),stringsAsFactors = F)
+  
+  row1 <- data.frame(unlist(strsplit(as.character(tmp[,1]),") \\(")))
+  row1 <- data.frame(gsub(")", "", row1[, 1]))
+  row1 <- data.frame(gsub("( ", "", row1[, 1], fixed = TRUE))
+  row1 <- data.frame(gsub("(", "", row1[, 1], fixed = TRUE))
+  row1 <- apply(row1[1], 1, function(x) data.frame(unlist(strsplit(x, 
+                                                                   "[[:blank:]]"))))
+  row1 <- unlist(lapply(row1, function(x) x[x != ""]))
+  
+  frags <- row1[is.odd(1:length(row1))]
+  int <- row1[!is.odd(1:length(row1))]
+  totalPeak <- data.frame(cbind(frags, int))
+  #totalPeak <- oneGroup  
+  
+  totalPeak$frags=as.numeric(as.character(totalPeak$frags))
+  totalPeak$int=as.numeric(as.character(totalPeak$int))
+  totalPeak<-totalPeak['&'(totalPeak$frags>=mz_L,totalPeak$frags<=mz_U),]
+  
+  max(totalPeak[which(totalPeak$int==max(totalPeak$int)),"frags"])
+  #totalPeak[which(totalPeak$int==max(totalPeak$int)),"frags"]
+}
+
+
+dev.new.OS<-function(){
+switch(Sys.info()[['sysname']],
+       Windows= {windows()},
+       Linux  = {X11()},
+       Darwin = {quartz()})  
+    
+  
+}
+
+std <- function(x) sd(x)/sqrt(length(x))
+
+std.outliner.rm <- function(x) {
+  x<-x[!('|'(x>(3*sd(x)+median(x)),x<(-3*sd(x)+median(x))))]
+  sd(x)/sqrt(length(x))
+}
+
+Combine_result<-function(e,f,p){
+  
+  finaltable<-rbind(t(p),e)
+  
+  return(finaltable)
+  
+  
+}
+Combine_result_file<-function(path){
+  
+  e=read.csv(paste0(path,"/","e.csv"),stringsAsFactors = F)
+  
+  enorm=read.csv(paste0(path,"/","SERRF_normalized.csv"),stringsAsFactors = F)
+  
+  f=read.csv(paste0(path,"/","f.csv"),stringsAsFactors = F)
+  
+  p=read.csv(paste0(path,"/","p.csv"),header = F,stringsAsFactors = F)
+  
+  p=p[,2:5]
+  
+  
+  
+  rownames(p)=as.character(p[,1])
+  rownames(p)[1]="label"
+  tp=as.data.frame(t(p),stringsAsFactors=F)
+  colnames(e)=as.character(p[,1])
+  finaltable<-rbind(tp,e)
+  colnames(enorm)=as.character(p[,1])
+  finaltablenorm<-rbind(tp,enorm)
+  
+  return(list(raw=finaltable,norm=finaltablenorm))
+  
+  
+}

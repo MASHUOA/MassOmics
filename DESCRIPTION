@@ -1,0 +1,24 @@
+Package: MassOmics
+Type: Package
+Title: Data extraction pipeline for large-scale GC-MS metabolomics datasets
+Version: 2.5.3
+Date: 
+Depends: R (>= 3.5.0), methods, Biobase, BiocParallel, MSnbase, ncdf4
+Author: George GUO, Ting-Li Han, Elizabeth J. McKenzie, M. Beatrix Jones
+Maintainer: George GUO <George.GUO@auckland.ac.nz>
+Description: "MassOmics" is designed to bring together R packages and scripts for GC-MS data pro-cessing to rapidly integrate and annotate peaks in large-scale datasets, all within a graphical user-friendly interface. This package also provides identification of background contaminants, various normalisation methods, correction of analytical variation, and basic multivariate statistical analysis.
+License: GPL-2
+LazyLoad: yes
+NeedsCompilation: no
+Packaged: 
+RoxygenNote: 6.1.1
+Encoding: UTF-8
+Imports: 
+    tcltk,Rcpp,openxlsx,tidyr,randomForest,rfviz,ggpubr,extrafont,mzR,xcms,svDialogs,
+    svGUI,KEGGREST,RColorBrewer,rgl,mixOmics,plyr,flux,tkrplot,multtest,XML,
+    CAMERA,qvalue,doParallel,BiocManager,pacman,backports,BiocParallel
+Suggests: 
+    covr,
+    devtools
+VignetteBuilder: knitr
+biocViews: ImmunoOncology, MassSpectrometry, Metabolomics
