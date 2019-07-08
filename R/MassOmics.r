@@ -430,10 +430,12 @@ buildDatabase <- function (save = FALSE, folder, saveAs="default")
   listOfComps <- data.frame(listOfComps)
   listOfComps[2] <- row.names(listOfComps)
   row.names(listOfComps) <- 1:nrow(listOfComps)
-  BPPARAM=bpparam()
-  bpprogressbar(BPPARAM)=T
-  listOfCompstest <- bplapply(as.list(t(listOfComps[2])),getPathways,BPPARAM = BPPARAM)
-  listOfComps[3] <-unlist(listOfCompstest)
+  #BPPARAM=bpparam()
+  #bpprogressbar(BPPARAM)=T
+  
+  #listOfCompstest <- bplapply(as.list(t(listOfComps[2])),getPathways,BPPARAM = BPPARAM)
+  #listOfComps[3] <-unlist(listOfCompstest)
+  listOfComps[3] <- apply_pb(listOfComps[2],1,getPathways)
   FileName <- "COMPbase"
   dateForFile <- Sys.time()
   dateForFile <- gsub(" ", "", dateForFile)
