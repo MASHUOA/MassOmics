@@ -360,6 +360,7 @@ buildDatabase <- function (save = FALSE, folder, saveAs="default")
     dateForFile <- gsub(":", "", dateForFile)
     NameFile <- dlgInput(message = "What is the name of the new database?",
                          default = saveAs)
+    NameFile=(NameFile$res)
     NameFile <- windows_filename(NameFile)
     return(NameFile)
   }
