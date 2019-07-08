@@ -315,7 +315,8 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
 
 ######################################### build KEGG Database #########################################
 buildDatabase <- function (save = FALSE, folder, saveAs="default")
-{ require(KEGGREST)
+{ 
+  require(KEGGREST)
   require(svDialogs)
   require(svGUI)
   library(tcltk2)
@@ -334,8 +335,7 @@ buildDatabase <- function (save = FALSE, folder, saveAs="default")
   OSsystem <- Sys.info()["sysname"]
   if (OSsystem == "Windows") {
     FolderDivisor <- "\\"
-  }
-  else {
+  }  else {
     FolderDivisor <- "/"
   }
   apply_pb <- function(X, MARGIN, FUN, ...) {
@@ -358,8 +358,9 @@ buildDatabase <- function (save = FALSE, folder, saveAs="default")
     dateForFile <- Sys.time()
     dateForFile <- gsub(" ", "", dateForFile)
     dateForFile <- gsub(":", "", dateForFile)
-    NameFile <- dlgInput(message = "What is the name of the new database (Don't change name -from Morgan)?",
+    NameFile <- dlgInput(message = "What is the name of the new database?",
                          default = saveAs)
+    NameFile <- windows_filename(NameFile)
     return(NameFile)
   }
   error1 <- "The folder defined to save the database is not a valid path."
@@ -372,15 +373,12 @@ buildDatabase <- function (save = FALSE, folder, saveAs="default")
       folder = dlgDir(title = titleDLG)$res
       if (missing(saveAs)) {
         fileName <- NameToSave()
-      }
-      else {
+      } else {
         fileName <- saveAs
       }
-    }
-    else {
+    }else {
       if (is.character(folder)) {
-        isFolder <- file.access(as.character(folder),
-                                0)
+        isFolder <- file.access(as.character(folder), 0)
         if (isFolder == 0) {
           isFolder <- file.info(folder)
           if (isFolder$isdir != TRUE) {
@@ -394,15 +392,13 @@ buildDatabase <- function (save = FALSE, folder, saveAs="default")
               fileName <- saveAs
             }
           }
-        }
-        else {
+        } else {
           print(error1)
           print(error2)
           folder = dlgDir(title = titleDLG)$res
           if (missing(saveAs)) {
             fileName <- NameToSave()
-          }
-          else {
+          } else {
             fileName <- saveAs
           }
         }
@@ -413,8 +409,7 @@ buildDatabase <- function (save = FALSE, folder, saveAs="default")
         folder = dlgDir(title = titleDLG)$res
       }
     }
-  }
-  else {
+  }  else {
     if (missing(saveAs)) {
       fileName <- NameToSave()
     }
@@ -423,7 +418,7 @@ buildDatabase <- function (save = FALSE, folder, saveAs="default")
     }
   }
   getPathways <- function(x) {
-    TotalReport <- keggGet(x)
+    TotalReport <- KEGGREST::keggGet(x)
     pathways <- TotalReport[[1]]$PATHWAY
     pathways <- data.frame(pathways)
     pathways <- row.names(pathways)
@@ -434,7 +429,10 @@ buildDatabase <- function (save = FALSE, folder, saveAs="default")
   listOfComps <- data.frame(listOfComps)
   listOfComps[2] <- row.names(listOfComps)
   row.names(listOfComps) <- 1:nrow(listOfComps)
-  listOfComps[3] <- apply_pb(listOfComps[2], 1, function(x) getPathways(x))
+  BPPARAM=bpparam()
+  bpprogressbar(BPPARAM)=T
+  listOfCompstest <- bplapply(as.list(t(listOfComps[2])),getPathways,BPPARAM = BPPARAM)
+  listOfComps[3] <-unlist(listOfCompstest)
   FileName <- "COMPbase"
   dateForFile <- Sys.time()
   dateForFile <- gsub(" ", "", dateForFile)
@@ -481,12 +479,12 @@ buildDatabase <- function (save = FALSE, folder, saveAs="default")
   write.csv(pathname, file = placeToSave, row.names = FALSE)
   print("Your new KEGG database has been installed.")
   if (save == TRUE) {
-    dir.create(paste(folder, fileName, sep = ""))
-    placeToSave <- paste(folder, fileName, FolderDivisor,
-                         "COMPbase.csv", sep = "")
+    dir.create(paste(folder, fileName, sep = FolderDivisor))
+    placeToSave <- paste(folder, fileName,
+                         "COMPbase.csv", sep =FolderDivisor)
     write.csv(listOfComps, file = placeToSave, row.names = FALSE)
-    placeToSave <- paste(folder, fileName, FolderDivisor,
-                         "PATHbase.csv", sep = "")
+    placeToSave <- paste(folder, fileName, 
+                         "PATHbase.csv", sep = FolderDivisor)
     write.csv(pathname, file = placeToSave, row.names = FALSE)
     print("Your new KEGG database has been saved.")
   }
