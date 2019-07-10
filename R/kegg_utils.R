@@ -1,6 +1,6 @@
 ######################################### addKeggCodes #########################################
 addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "Results with kegg codes",
-                          addCodes = TRUE)
+                          addCodes = TRUE, formating_before_import=T)
 {
   require(KEGGREST)
   require(svDialogs)
@@ -46,6 +46,7 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
   if (missing(inputData)) {
     inputData <- isCSVdlg("Select the CSV file containing the input data",
                           "The input file MUST be in the format of comma-separated value (csv). Please, choose an input file showing the extension .csv.")
+    
     dataKegg <- read.csv(inputData, colClasses = "character")
     print("Input file loaded...")
   }
@@ -162,6 +163,9 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
       }
     }
   }
+  
+  dataKegg=kegg_format(dataKegg)
+  
   if (dataKegg[1, 1] %in% c("Replicates", "Replicate", "replicates",
                             "replicate")) {
     replicates <- as.character(dataKegg[1, ])
@@ -191,6 +195,13 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
     pre.data <- merge(dataKegg, codesKegg, by.x = "Name",
                       by.y = "Name", all.x = TRUE)
     missingCpd <- pre.data[is.na(pre.data$kegg), ]
+    #uniquesmissingcpd=NULL
+    missingCpdname=unique(missingCpd[,1])
+    missingCpd<-NULL
+    missingCpd$Name=missingCpdname
+    missingCpd=data.frame(missingCpd,stringsAsFactors = F)
+    #missingCpd <- missingCpd[missingCpd$Name %in% unique(missingCpd$Name),]
+    #missingCpd <- unique(missingCpd[,1])
     if (nrow(missingCpd) == 0) {
       print("Every compound in the inputData was found in the keggCodes library.")
     }
@@ -209,12 +220,32 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
         
         for (i in 1:nrow(missingCpd)) {
           
-          compToSearch = original.comps[which(gsub(" ",
-                                                   "", original.comps[, 1]) == missingCpd[i,
-                                                                                          1]), ]
-          potentialCPDS <- keggFind("compound", as.character(compToSearch))
+          compToSearch = original.comps[which(gsub(" ","", original.comps[, 1]) == missingCpd[i,1]), ]
           
+          #compToSearch=gsub("-","",compToSearch)
+          
+          compToSearch=gsub("\\(+-\\)","",compToSearch)
+          compToSearch=gsub("\\(+\\)","",compToSearch)
+          compToSearch=gsub("\\(-\\)","",compToSearch)
+          compToSearch=gsub("^-","",compToSearch)
+          #compToSearch=gsub(")","",compToSearch)
+          
+          potentialCPDS=character(0)
+          
+          potentialCPDS <- try(keggFind("compound", as.character(compToSearch)))
+          
+          if (length(potentialCPDS)==0 | class(potentialCPDS)=="try-error"){
+            possible_cas=retieve_cpd(compToSearch)
+            if(!is.na(possible_cas)){
+             potentialCPDS=try(keggFind("compound",possible_cas[[1]][1]))
+             
+            }
+            
+          }
+          
+          if (length(potentialCPDS)!=0 && class(potentialCPDS)!="try-error"){
           if (autocpdChosen){
+            #Sys.sleep(runif(1,0.01, 0.02))
             cpdChosen <- potentialCPDS[1]
             cpdChosen <- names(cpdChosen)
             cpdChosen <- gsub("cpd:", "", cpdChosen)
@@ -253,6 +284,7 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
           }
         }
         }
+      }
           
 
         saveLib <- dlgMessage("Would you like to save your new KEGG library to a CSV file?",
@@ -454,13 +486,13 @@ buildDatabase <- function (save = FALSE, folder, saveAs="default")
   userName <- Sys.info()
   userName <- userName[[7]]
   names(pathname)[c(1, 2, 3)] <- c(FileName, dateForFile, userName)
-  dir.create(paste(R.home("library/PAPi/databases/"), fileName,
-                   sep = ""), recursive = TRUE)
-  placeToSave <- paste(R.home("library/PAPi/databases/"), fileName,
-                       "/COMPbase.csv", sep = "")
+  dir.create(paste(R.home("library/PAPi/databases"), fileName,
+                   sep = FolderDivisor), recursive = TRUE)
+  placeToSave <- paste(R.home("library/PAPi/databases"), fileName,
+                       "/COMPbase.csv", sep = FolderDivisor)
   write.csv(listOfComps, file = placeToSave, row.names = FALSE)
-  placeToSave <- paste(R.home("library/PAPi/databases/"), fileName,
-                       "/PATHbase.csv", sep = "")
+  placeToSave <- paste(R.home("library/PAPi/databases"), fileName,
+                       "/PATHbase.csv", sep = FolderDivisor)
   write.csv(pathname, file = placeToSave, row.names = FALSE)
   print("Your new KEGG database has been installed.")
   if (save == TRUE) {
@@ -1017,3 +1049,48 @@ papi <- function (inputData, save = TRUE, folder, output = "Papi results",
   return(papi.frame)
 }
 
+
+######################################### format the integration result table for pathway analysis#######
+kegg_format<-function(inputData,save=T){
+  
+  library(data.table)
+  library(stringr)
+  
+  if (class(inputData)=="character"){
+   inputData.df=fread(inputData) 
+  }else if("data.frame" %in% class(inputData)) {
+    inputData.df=(inputData)
+  }
+  
+  
+  inputData.df[,1]=gsub("\\(split peak .\\)","",inputData.df[,1])
+  
+  inputData.df[,1]=gsub(" ","",inputData.df[,1])
+  
+  replicates=data.frame(t(data.frame(as.character(colnames(inputData.df)),stringsAsFactors = F)),stringsAsFactors = F)
+  
+  
+  
+  colnames(replicates)=replicates[1,]
+  
+  replicates[1,1]="Replicates"
+  
+  inputData.df=rbind(replicates,inputData.df)
+  
+  rownames(inputData.df)=1:nrow(inputData.df)
+  
+  if (save && class(inputData)=="character"){
+    
+    write.csv(inputData.df,paste0(gsub(".csv$","",inputData),"_pathway_formated.csv"))
+    
+  }
+  
+  return(inputData.df)
+  
+}
+
+retieve_cpd<-function(x){
+ library("webchem") 
+  
+  cir_query(x,"names")
+}
