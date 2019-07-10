@@ -39,6 +39,8 @@
 #' @import backports
 #' @import BiocParallel
 #' @import pbapply
+#' @import checkmate
+#' @import zip
 #' @importFrom stats na.omit runif
 #' @importFrom utils download.file modifyList packageVersion read.table tail
 

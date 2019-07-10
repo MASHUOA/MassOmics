@@ -6,7 +6,7 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
   require(svDialogs)
   require(svGUI)
   require(tcltk)
-  
+  require(tcltk2)
   isCSVdlg <- function(titleMSG, errorMSG) {
     t = 0
     while (t == 0) {
@@ -167,6 +167,8 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
     replicates <- as.character(dataKegg[1, ])
     dataKegg <- dataKegg[-1, ]
     rep <- 1
+  }  else{
+    rep <- 0
   }
   if (names(codesKegg)[1]=="COMPbase"){
     codesKegg=codesKegg[,1:3]
@@ -184,7 +186,7 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
   #names(codesKegg)[c(1, 2)] <- c("kegg", "Name")
   #names(codesKegg)[c(1, 2)] <- c("Name", "kegg")
   #codesKegg[2] <- gsub(" ", "", codesKegg[, 2])
-  codesKegg[1] <- gsub(" ", "", codesKegg[, 1])
+  codesKegg[["Name"]] <- gsub(" ", "", codesKegg[["Name"]])
   if (addCodes == TRUE) {
     pre.data <- merge(dataKegg, codesKegg, by.x = "Name",
                       by.y = "Name", all.x = TRUE)
@@ -203,13 +205,27 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
         else {
           dlgMessage("This is  is going to happen now: KEGG database will be searched for the missing compounds. For each missing compound, a list of potential matches will be presented to you. If the missing compound is part of the list, select it and its respective KEGG code will be added to your KEGG code library. If the desired compound is not listed, you can go to the end of the list and click on OTHER to manually add its KEGG code, or you can click on SKIP if you have no KEGG code for this compound. Compounds showing no KEGG codes will not be analyzed by PAPi.")
         }
+        autocpdChosen=F
+        
         for (i in 1:nrow(missingCpd)) {
+          
           compToSearch = original.comps[which(gsub(" ",
                                                    "", original.comps[, 1]) == missingCpd[i,
                                                                                           1]), ]
           potentialCPDS <- keggFind("compound", as.character(compToSearch))
-          cpdChosen <- tk_select.list(c(potentialCPDS, "OTHER",
-                                        "SKIP"), title = as.character(compToSearch))
+          
+          if (autocpdChosen){
+            cpdChosen <- potentialCPDS[1]
+            cpdChosen <- names(cpdChosen)
+            cpdChosen <- gsub("cpd:", "", cpdChosen)
+            
+            original.kegglib <- rbind(original.kegglib,
+                                      c(kegg=as.character(compToSearch), Name=cpdChosen,Pathways=getPathways(cpdChosen)))
+            
+          }else{
+          
+          cpdChosen <- tk_select.list(c("AUOT-SELECT TOP HIT FOR THE REST NEW CPDS", "OTHER",
+                                        "SKIP", potentialCPDS),preselect="AUOT-SELECT TOP HIT FOR THE REST NEW CPDS", title = as.character(compToSearch))
           if (cpdChosen == "OTHER") {
             cpdChosen <- dlgInput(paste("Enter the KEGG code for ",
                                         as.character(compToSearch), " or leave it as absent.",
@@ -222,8 +238,10 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
           }
           else {
             if (cpdChosen == "SKIP") {
-            }
-            else {
+            }else if (cpdChosen == "AUOT-SELECT TOP HIT FOR THE REST NEW CPDS"){
+              autocpdChosen=T
+              
+            } else {
               cpdChosen <- potentialCPDS[which(potentialCPDS ==
                                                  cpdChosen)]
               cpdChosen <- names(cpdChosen)
@@ -234,6 +252,9 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
             }
           }
         }
+        }
+          
+
         saveLib <- dlgMessage("Would you like to save your new KEGG library to a CSV file?",
                               type = c("yesno"))$res
         if (saveLib == "yes") {
@@ -255,8 +276,8 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
       }
     }
   }
-  names(codesKegg)[c(1, 2)] <- c("kegg", "Name")
-  codesKegg<-codesKegg[,c("kegg", "Name","Pathways")]
+
+  codesKegg<-codesKegg[,c("kegg", "Name","Pathway")]
   codesKegg[1] <- gsub("cpd:", "", codesKegg[, 1])
   codesKegg[2] <- gsub(" ", "", codesKegg[, 2])
   FinalData <- merge(dataKegg, codesKegg, by.x = "Name", by.y = "Name",
@@ -475,6 +496,8 @@ papi <- function (inputData, save = TRUE, folder, output = "Papi results",
   require(KEGGREST)
   require(svDialogs)
   require(svGUI)
+  require(tcltk)
+  require(tcltk2)
   
   isCSVdlg <- function(titleMSG, errorMSG) {
     t = 0
