@@ -41,6 +41,7 @@
 #' @import pbapply
 #' @import checkmate
 #' @import zip
+#' @import PAPi
 #' @importFrom stats na.omit runif
 #' @importFrom utils download.file modifyList packageVersion read.table tail
 

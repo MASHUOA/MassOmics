@@ -335,7 +335,7 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
 }
 
 ######################################### build KEGG Database #########################################
-buildDatabase <- function (save = FALSE, folder, saveAs="default")
+buildDatabase_old <- function (save = FALSE, folder, saveAs="default")
 { 
   require(KEGGREST)
   require(svDialogs)
@@ -1094,3 +1094,191 @@ retieve_cpd<-function(x){
   
   cir_query(x,"names")
 }
+
+######################################### build KEGG Database #########################################
+buildDatabase <- function (save = FALSE, folder, saveAs="default")
+{ 
+  require(KEGGREST)
+  require(svDialogs)
+  require(svGUI)
+  library(tcltk2)
+  library(RbioRXN)
+  checkAdminstration <- tk_select.list(c("Yes (continue)",  "No (stop)"),  title = "Run R as administrator")
+  
+  
+  if (checkAdminstration  == "No (Stop)"){
+    stop("KEGG library won't able to save in you computer")
+  }
+  
+  
+  testInternet <- try(keggList("pathway"), TRUE)
+  if ("try-error" %in% class(testInternet)) {
+    stop("We could not connect to KEGG database. You probably have no internet connection.")
+  }
+  OSsystem <- Sys.info()["sysname"]
+  if (OSsystem == "Windows") {
+    FolderDivisor <- "\\"
+  }  else {
+    FolderDivisor <- "/"
+  }
+  apply_pb <- function(X, MARGIN, FUN, ...) {
+    env <- environment()
+    pb_Total <- sum(dim(X)[MARGIN])
+    counter <- 0
+    pb <- txtProgressBar(min = 0, max = pb_Total, style = 3)
+    wrapper <- function(...) {
+      curVal <- get("counter", envir = env)
+      assign("counter", curVal + 1, envir = env)
+      setTxtProgressBar(get("pb", envir = env), curVal +
+                          1)
+      FUN(...)
+    }
+    res <- apply(X, MARGIN, wrapper, ...)
+    close(pb)
+    res
+  }
+  NameToSave <- function() {
+    dateForFile <- Sys.time()
+    dateForFile <- gsub(" ", "", dateForFile)
+    dateForFile <- gsub(":", "", dateForFile)
+    NameFile <- dlgInput(message = "What is the name of the new database?",
+                         default = saveAs)
+    NameFile=(NameFile$res)
+    NameFile <- windows_filename(NameFile)
+    return(NameFile)
+  }
+  error1 <- "The folder defined to save the database is not a valid path."
+  error2 <- "Please, point to the folder where the database should be saved."
+  titleDLG <- "Select the folder where the new database will be saved."
+  if (save == TRUE) {
+    if (missing(folder)) {
+      print(error1)
+      print(error2)
+      folder = dlgDir(title = titleDLG)$res
+      if (missing(saveAs)) {
+        fileName <- NameToSave()
+      } else {
+        fileName <- saveAs
+      }
+    }else {
+      if (is.character(folder)) {
+        isFolder <- file.access(as.character(folder), 0)
+        if (isFolder == 0) {
+          isFolder <- file.info(folder)
+          if (isFolder$isdir != TRUE) {
+            print(error1)
+            print(error2)
+            folder = dlgDir(title = titleDLG)$res
+            if (missing(saveAs)) {
+              fileName <- NameToSave()
+            }
+            else {
+              fileName <- saveAs
+            }
+          }
+        } else {
+          print(error1)
+          print(error2)
+          folder = dlgDir(title = titleDLG)$res
+          if (missing(saveAs)) {
+            fileName <- NameToSave()
+          } else {
+            fileName <- saveAs
+          }
+        }
+      }
+      else {
+        print("The path to the folder where the results will be saved must be specified as character.")
+        print(error2)
+        folder = dlgDir(title = titleDLG)$res
+      }
+    }
+  }  else {
+    if (missing(saveAs)) {
+      fileName <- NameToSave()
+    }
+    else {
+      fileName <- saveAs
+    }
+  }
+  
+  listOfComps <- keggList("compound")
+  listOfComps <- data.frame(listOfComps)
+  listOfComps[2] <- row.names(listOfComps)
+  row.names(listOfComps) <- 1:nrow(listOfComps)
+  #BPPARAM=bpparam()
+  #bpprogressbar(BPPARAM)=T
+  
+  #listOfCompstest <- bplapply(as.list(t(listOfComps[2])),getPathways,BPPARAM = BPPARAM)
+  #listOfComps[3] <-unlist(listOfCompstest)
+  listOfComps[3] <- apply_pb(listOfComps[2],1,getPathways)
+  FileName <- "COMPbase"
+  dateForFile <- Sys.time()
+  dateForFile <- gsub(" ", "", dateForFile)
+  dateForFile <- gsub(":", "", dateForFile)
+  userName <- Sys.info()
+  userName <- userName[[7]]
+  names(listOfComps)[c(1, 2, 3)] <- c("Name", "kegg",
+                                      "Pathway")
+  numbcomp <- function(x) {
+    compounds <- keggGet(x)
+    compounds <- data.frame(compounds[[1]]$COMPOUND)
+    compounds <- nrow(compounds)
+    if (compounds == 0) {
+      x <- gsub("path:map", "ko", x, fixed = TRUE)
+      compounds <- try(keggGet(x), silent = TRUE)
+      if ("try-error" %in% class(compounds)) {
+        compounds <- 0
+      }
+      else {
+        compounds <- data.frame(compounds[[1]]$COMPOUND)
+        compounds <- nrow(compounds)
+      }
+    }
+    return(compounds)
+  }
+  pathname <- data.frame(keggList("pathway"))
+  pathname[2] <- row.names(pathname)
+  row.names(pathname) <- 1:nrow(pathname)
+  pathname[3] <- apply_pb(pathname[2], 1, function(x) numbcomp(x))
+  FileName <- "PATHbase"
+  dateForFile <- Sys.time()
+  dateForFile <- gsub(" ", "", dateForFile)
+  dateForFile <- gsub(":", "", dateForFile)
+  userName <- Sys.info()
+  userName <- userName[[7]]
+  names(pathname)[c(1, 2, 3)] <- c(FileName, dateForFile, userName)
+  dir.create(paste(R.home("library/PAPi/databases"), fileName,
+                   sep = FolderDivisor), recursive = TRUE)
+  placeToSave <- paste(R.home("library/PAPi/databases"), fileName,
+                       "/COMPbase.csv", sep = FolderDivisor)
+  write.csv(listOfComps, file = placeToSave, row.names = FALSE)
+  placeToSave <- paste(R.home("library/PAPi/databases"), fileName,
+                       "/PATHbase.csv", sep = FolderDivisor)
+  write.csv(pathname, file = placeToSave, row.names = FALSE)
+  print("Your new KEGG database has been installed.")
+  if (save == TRUE) {
+    dir.create(paste(folder, fileName, sep = FolderDivisor))
+    placeToSave <- paste(folder, fileName,
+                         "COMPbase.csv", sep =FolderDivisor)
+    write.csv(listOfComps, file = placeToSave, row.names = FALSE)
+    placeToSave <- paste(folder, fileName, 
+                         "PATHbase.csv", sep = FolderDivisor)
+    write.csv(pathname, file = placeToSave, row.names = FALSE)
+    print("Your new KEGG database has been saved.")
+  }
+}
+
+
+getPathways <- function(x) {
+  TotalReport <- KEGGREST::keggGet(x)
+  pathways <- TotalReport[[1]]$PATHWAY
+  pathways <- data.frame(pathways)
+  pathways <- row.names(pathways)
+  pathways <- paste(pathways, collapse = ";")
+  return(pathways)
+}
+
+
+
+
