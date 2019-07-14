@@ -1102,7 +1102,7 @@ buildDatabase <- function (save = FALSE, folder, saveAs="default")
   require(svDialogs)
   require(svGUI)
   library(tcltk2)
-  library(RbioRXN)
+  #library(RbioRXN)
   checkAdminstration <- tk_select.list(c("Yes (continue)",  "No (stop)"),  title = "Run R as administrator")
   
   
