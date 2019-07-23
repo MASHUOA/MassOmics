@@ -1403,8 +1403,9 @@ return(papiData)
 run_PAPi<-function(papiData,localDatabase = "default"){
 library(PAPi)
   if (missing(papiData)) papiData=read_table_generic(tk_choose.files(caption = "Select papiData.csv for PAPi analysis"))
-  papiData=
+  papiData=papiData[!is.na(papiData$Name),]
   #data(papiData)
+  papiData=as.data.frame(papiData)
   papiResults <- PAPi::papi(papiData, save = FALSE, offline = TRUE, localDatabase = localDatabase)
   
   #data=matchentry %>% top_n( 10,1)
