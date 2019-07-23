@@ -1290,6 +1290,7 @@ convert_PAPi<-function(metabolomicsData,localDatabase = "default",matchingscore=
   library(stringdist)
   library(dplyr)
   library(BiocParallel)
+  if (missing(metabolomicsData)) metabolomicsData=read_table_generic(tk_choose.files(caption = "Select formatted data for KEGG code conversion"))
   
 
   keggLibrary=read.csv(paste0(R.home(),"/library/PAPi/databases/default/COMPbase.csv"),stringsAsFactors = F)
@@ -1401,8 +1402,8 @@ return(papiData)
 
 run_PAPi<-function(papiData,localDatabase = "default"){
 library(PAPi)
-  if (missing(papiData)) papiData=tk_choose.files(caption = "Select papiData.csv for PAPi analysis")
-  
+  if (missing(papiData)) papiData=read_table_generic(tk_choose.files(caption = "Select papiData.csv for PAPi analysis"))
+  papiData=
   #data(papiData)
   papiResults <- PAPi::papi(papiData, save = FALSE, offline = TRUE, localDatabase = localDatabase)
   
@@ -1462,7 +1463,7 @@ PAPi_formatting<-function(selectfile,
    #conditionnames<-infofile$Condition[infofile$Name==colnames(file)]
    newfile1<-rbind(as.character(c("Replicates",conditionnames[,2])),newfile)
    if (output){
-     write.csv(newfile1,paste0(rootdir,"\\PAPi_",fileName),row.names = F)
+     write.csv(newfile1,paste0(rootdir,"\\KEGG_formated_",fileName),row.names = F)
    }
    return(newfile1)
 }
