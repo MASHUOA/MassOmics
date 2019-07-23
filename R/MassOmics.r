@@ -2259,9 +2259,10 @@ run <- function(){
 
   ##PAPi
   tkadd(software, "cascade", label = "Pathway analysis", menu = PAPi)
-  tkadd(PAPi ,"command", label = "Building KEGG database in your PC", command = function() buildDatabase ())
-  tkadd(PAPi ,"command", label = "Replace name by KeggCodes", command = function() addKeggCodes())
-  tkadd(PAPi ,"command", label = "Run pathway analysis", command = function() papi())
+  tkadd(PAPi ,"command", label = "Format massomics data for pathway analysis", command = function() PAPi_formatting())
+  tkadd(PAPi ,"command", label = "Building KEGG database in your PC", command = function() buildDatabase())
+  tkadd(PAPi ,"command", label = "Replace name by KeggCodes", command = function() convert_PAPi())
+  tkadd(PAPi ,"command", label = "Run pathway analysis", command = function() run_PAPi())
 
   #image
   image.path<-c(paste(file.path(path.package(package="MassOmics")),"/R/LabLogo.gif", sep=""))

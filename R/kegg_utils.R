@@ -1,6 +1,6 @@
 ######################################### addKeggCodes #########################################
 addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "Results with kegg codes",
-                          addCodes = TRUE, formating_before_import=T)
+                          addCodes = TRUE, formating_before_import=T,smpdb=load_smpdb())
 {
   require(KEGGREST)
   require(svDialogs)
@@ -17,8 +17,7 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
       if (checkIfCsv4 %in% c("CSV", "csv")) {
         t = 1
         return(checkIfCsv)
-      }
-      else {
+      }      else {
         dlgMessage(errorMSG)
       }
     }
@@ -32,8 +31,7 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
     if (checkIfCsv4 %in% c("CSV", "csv")) {
       t = 1
       return(t)
-    }
-    else {
+    }    else {
       return(t)
     }
   }
@@ -49,37 +47,32 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
     
     dataKegg <- read.csv(inputData, colClasses = "character")
     print("Input file loaded...")
-  }
-  else {
+  }  else {
     if (is.data.frame(inputData) == TRUE) {
       dataKegg <- inputData
       print("Data frame loaded...")
-    }
-    else {
+    }    else {
       if (is.character(inputData)) {
         checkIfCsv <- isCSV(inputData)
         if (checkIfCsv == 1) {
           inputTest <- file.access(inputData, 0)
           if (inputTest == 0) {
             dataKegg = read.csv(inputData, colClasses = "character")
-          }
-          else {
+          }          else {
             dlgMessage("The input file specified is not accessible. Please, choose a valid CSV file to be used as input data.")
             inputData <- isCSVdlg("Select the CSV file containing the input data",
                                   "The input file MUST be in the format of comma-separated value (csv). Please, choose an input file showing the extension .csv.")
             dataKegg <- read.csv(inputData, colClasses = "character")
             print("Input file loaded...")
           }
-        }
-        else {
+        }        else {
           dlgMessage("The input file specified is not in CSV format. Please, choose a valid CSV file to be used as input data.")
           inputData <- isCSVdlg("Select the CSV file containing the input data",
                                 "The input file MUST be in the format of comma-separated value (csv). Please, choose an input file showing the extension .csv.")
           dataKegg <- read.csv(inputData, colClasses = "character")
           print("Input file loaded...")
         }
-      }
-      else {
+      }      else {
         dlgMessage("The path to the input data must be specified as character string. Please, choose a valid CSV file to be used as input data.")
         inputData <- isCSVdlg("Select the CSV file containing the input data",
                               "The input file MUST be in the format of comma-separated value (csv). Please, choose an input file showing the extension .csv.")
@@ -93,37 +86,32 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
                           "The KEGG code library MUST be in the format of comma-separated value (csv). Please, choose a KEGG code library showing the extension .csv.")
     codesKegg <- read.csv(keggCodes, colClasses = "character")
     print("keggCodes - csv file loaded...")
-  }
-  else {
+  }  else {
     if (is.data.frame(keggCodes) == TRUE) {
       codesKegg <- keggCodes
       print("keggCodes - Data frame loaded...")
-    }
-    else {
+    }    else {
       if (is.character(keggCodes)) {
         checkIfCsv <- isCSV(keggCodes)
         if (checkIfCsv == 1) {
           inputTest <- file.access(keggCodes, 0)
           if (inputTest == 0) {
             codesKegg = read.csv(keggCodes, colClasses = "character")
-          }
-          else {
+          }          else {
             dlgMessage("The KEGG code library specified is not accessible. Please, choose a valid CSV file to be used as KEGG code library.")
             keggCodes <- isCSVdlg("Select the CSV file containing KEGG codes",
                                   "The KEGG code library MUST be in the format of comma-separated value (csv). Please, choose a KEGG code library showing the extension .csv.")
             codesKegg <- read.csv(keggCodes, colClasses = "character")
             print("keggCodes - csv file loaded...")
           }
-        }
-        else {
+        }        else {
           dlgMessage("The KEGG code library specified is not in CSV format. Please, choose a valid CSV file to be used as KEGG code library.")
           keggCodes <- isCSVdlg("Select the CSV file containing KEGG code library",
                                 "The KEGG code library MUST be in the format of comma-separated value (csv). Please, choose a KEGG code library showing the extension .csv.")
           codesKegg <- read.csv(keggCodes, colClasses = "character")
           print("keggCodes - csv file loaded...")
         }
-      }
-      else {
+      }      else {
         dlgMessage("The path to the KEGG code library must be specified as character string. Please, choose a valid CSV file to be used as KEGG code library.")
         keggCodes <- isCSVdlg("Select the CSV file containing the KEGG code library",
                               "The KEGG code library MUST be in the format of comma-separated value (csv). Please, choose a KEGG code library showing the extension .csv.")
@@ -180,11 +168,18 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
                        "Pathway")
     
   }
+  if (!is.null(dataKegg$Name)){
+    dataKegg= dataKegg[,c("Name",colnames(dataKegg)[colnames(dataKegg)!="Name"])]
+    
+  }
+  
+  
   codesKegg=codesKegg[,c("kegg","Name", 
                          "Pathway")]
   original.data <- dataKegg
   original.kegglib <- codesKegg
-  original.comps <- dataKegg[1]
+  original.comps <- dataKegg
+  
   names(dataKegg)[1] <- "Name"
   dataKegg[1] <- gsub(" ", "", dataKegg[, 1])
   #names(codesKegg)[c(1, 2)] <- c("kegg", "Name")
@@ -204,32 +199,30 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
     #missingCpd <- unique(missingCpd[,1])
     if (nrow(missingCpd) == 0) {
       print("Every compound in the inputData was found in the keggCodes library.")
-    }
-    else {
+    } else {
       message(paste("Found new cpd, ",nrow(missingCpd),"in total\n",paste(head(original.comps[which(gsub(" ", "", original.comps[,
                                                               1]) %in% missingCpd[, 1]), ]),collapse = "\n")))
       addCPD <- dlgMessage("Some compounds of your input data are not listed in the kegg code library used. Some of these compounds are listed in the R console. Would you like to include them into your kegg library right now?",
                            type = "yesno")$res
       if (addCPD == "yes") {
         if (OSsystem == "Windows") {
-        }
-        else {
+        } else {
           dlgMessage("This is  is going to happen now: KEGG database will be searched for the missing compounds. For each missing compound, a list of potential matches will be presented to you. If the missing compound is part of the list, select it and its respective KEGG code will be added to your KEGG code library. If the desired compound is not listed, you can go to the end of the list and click on OTHER to manually add its KEGG code, or you can click on SKIP if you have no KEGG code for this compound. Compounds showing no KEGG codes will not be analyzed by PAPi.")
         }
         autocpdChosen=F
         
         for (i in 1:nrow(missingCpd)) {
           
-          compToSearch = original.comps[which(gsub(" ","", original.comps[, 1]) == missingCpd[i,1]), ]
-          
+          compToSearch = original.comps[which(gsub(" ","", original.comps[, 1]) == missingCpd[i,1]), "CAS"]
+          compToSearch =unique(compToSearch)
           #compToSearch=gsub("-","",compToSearch)
-          
+          compToSearch=gsub("-","",compToSearch)
           compToSearch=gsub("\\(+-\\)","",compToSearch)
           compToSearch=gsub("\\(+\\)","",compToSearch)
           compToSearch=gsub("\\(-\\)","",compToSearch)
           compToSearch=gsub("^-","",compToSearch)
           #compToSearch=gsub(")","",compToSearch)
-          
+          potentialCPDS=smpdb$CAS[which(smpdb$CAS==compToSearch)]
           potentialCPDS=character(0)
           
           potentialCPDS <- try(keggFind("compound", as.character(compToSearch)))
@@ -266,8 +259,7 @@ addKeggCodes <- function (inputData, keggCodes, folder, save = TRUE, output = "R
             }
             original.kegglib <- rbind(original.kegglib,
                                       c(cpdChosen, as.character(compToSearch)))
-          }
-          else {
+          } else {
             if (cpdChosen == "SKIP") {
             }else if (cpdChosen == "AUOT-SELECT TOP HIT FOR THE REST NEW CPDS"){
               autocpdChosen=T
@@ -1096,7 +1088,7 @@ retieve_cpd<-function(x){
 }
 
 ######################################### build KEGG Database #########################################
-buildDatabase <- function (save = FALSE, folder, saveAs="default")
+buildDatabase_old_2 <- function (save = FALSE, folder, saveAs="default")
 { 
   require(KEGGREST)
   require(svDialogs)
@@ -1268,7 +1260,10 @@ buildDatabase <- function (save = FALSE, folder, saveAs="default")
     print("Your new KEGG database has been saved.")
   }
 }
-
+buildDatabase<-function(){
+  library(PAPi)
+  buildDatabase()
+}
 
 getPathways <- function(x) {
   TotalReport <- KEGGREST::keggGet(x)
@@ -1280,5 +1275,195 @@ getPathways <- function(x) {
 }
 
 
+load_smpdb<-function(path="Z:\\George skyline results\\maldiimaging\\DB\\SMPdb.csv"){
+  smpdb<-read.csv(path)
+  
+  return(smpdb)
+  
+  
+  
+}
 
+convert_PAPi<-function(metabolomicsData,localDatabase = "default",matchingscore=0.6){
+  library(stringr)
+  library(PAPi)
+  library(stringdist)
+  library(dplyr)
+  library(BiocParallel)
+  
+
+  keggLibrary=read.csv(paste0(R.home(),"/library/PAPi/databases/default/COMPbase.csv"),stringsAsFactors = F)
+  
+  metabolomicsData$trimedNames=gsub("\\(split peak .\\)","",metabolomicsData$Names)
+  metabolomicsData$trimedNames=gsub("\\(peak .\\)","",metabolomicsData$trimedNames)
+  
+  metabolomicsData$trimedNames=gsub("methyl ester"," ",metabolomicsData$trimedNames)
+  metabolomicsData$trimedNames=gsub("methyl"," ",metabolomicsData$trimedNames)
+  metabolomicsData$trimedNames=gsub("Methyl"," ",metabolomicsData$trimedNames)
+  metabolomicsData$trimedNames=gsub("-"," ",metabolomicsData$trimedNames)
+  metabolomicsData$trimedNames=gsub(","," ",metabolomicsData$trimedNames)
+  metabolomicsData$trimedNames=gsub(" {2,}"," ",metabolomicsData$trimedNames)
+  metabolomicsData$trimedNames=gsub("[0-9]","",metabolomicsData$trimedNames)
+  #metabolomicsData_Names=gsub("-"," ",metabolomicsData_Names)
+  
+  metabolomicsData_Names=metabolomicsData$trimedNames[2:length(metabolomicsData$trimedNames)]
+  keggLibraryentry=keggLibrary[,1]
+  metabolomicsData_Names=unique(metabolomicsData_Names)
+  #stringsim(metabolomicsData_Names,keggLibraryentry)
+  #keggLibraryentry_split=stringr::str_split(keggLibraryentry,"; ")
+  
+    keggLibraryentry_split_index=lapply(1:length(keggLibraryentry),function(x,keggLibraryentry){
+      keggLibraryentry_split_index_name=unlist(stringr::str_split(keggLibraryentry[[x]],"; ") )
+      keggLibraryentry_split_index_index=length(keggLibraryentry_split_index_name)
+      return(data.frame(Name=keggLibraryentry_split_index_name,index=base::rep(x,keggLibraryentry_split_index_index),stringsAsFactors = F))
+    },keggLibraryentry) 
+    keggLibraryentry_split_index=do.call(rbind,keggLibraryentry_split_index)
+    #a=as.matrix(a,nrow=2)
+    #a=as.data.frame(t(as.matrix(a,nrow=2)),stringsAsFactors = F)
+    
+    matchentry=(sapply(metabolomicsData_Names, stringsim,keggLibraryentry_split_index$Name))
+    
+  stringsim_list<-function(x,list,t){
+    max(stringsim(t,list[[x]]))
+  }
+  
+  BPPARAM=bpparam()
+  bpworkers(BPPARAM)=4
+  bpprogressbar(BPPARAM)=T
+  #matchentry=BiocParallel::bplapply(metabolomicsData_Names,function(x,keggLibraryentry_split){
+  #  library(stringdist)
+  #  stringsim_list<-function(x,list,t){
+  #    max(stringsim(t,list[[x]]))
+  #  }
+    
+   # unlist(lapply(1:length(keggLibraryentry_split),stringsim_list,list=keggLibraryentry_split,t=x))
+    
+   # },keggLibraryentry_split,BPPARAM = BPPARAM)
+  
+  #rownames(matchentry)=keggLibraryentry
+  matchentry=as.data.frame(matchentry,stringsAsFactors = F)
+  
+  
+  matchentry_topN<-lapply(metabolomicsData_Names, function(x,matchentry,keggLibraryentry,top_N){
+    a=as.numeric(as.character(matchentry[,x]))
+    as=tail(sort(a),top_N)
+    ass=sapply(as, function(as,a){
+     which(a==as)},a) 
+    assunlist=unlist(ass)
+    assunlist=tail(unique(assunlist),top_N)
+    
+    #ass=a %in% as
+    #which(ass)
+    asss=data.frame(original=x,retrievedID=keggLibraryentry[assunlist],SimScore=a[assunlist],stringsAsFactors = F)
+ 
+  },matchentry,keggLibraryentry_split_index$Name,top_N)
+  
+  matchentry_topNbind=do.call(rbind,matchentry_topN)
+  
+  autoselect_top_1<-function(x,metabolomicsData_Names,matchentry_topN,matchingscore=0.6){
+    
+    name=metabolomicsData_Names[x]
+    df=matchentry_topN[[x]]
+    if (max(df$SimScore)>=matchingscore){
+    return(data.frame(origin=name,covert=df[head(which(df$SimScore==max(df$SimScore)),1),1],stringsAsFactors = F))
+    }else{
+    return(data.frame(origin=name,covert="Not_found",stringsAsFactors = F))
+    }
+    
+  }
+  
+  #metabolomicsData_Names_autoconvert=base::lapply(1:length(metabolomicsData_Names), autoselect_top_1,metabolomicsData_Names,matchentry_topN)
+  metabolomicsData_Names_autoconvert=base::lapply(1:length(metabolomicsData_Names), autoselect_top_1,metabolomicsData_Names,matchentry_topN,matchingscore=matchingscore) %>% unlist
+  metabolomicsData_Names_autoconvert=matrix(data=metabolomicsData_Names_autoconvert,nrow = 2)
+  metabolomicsData_Names_autoconvert=as.data.frame(t(metabolomicsData_Names_autoconvert),stringsAsFactors = F)
+  names(metabolomicsData_Names_autoconvert)=c("trimedNames","converted")
+  metabolomicsData_Names_autoconvert=merge(metabolomicsData_Names_autoconvert,metabolomicsData,by="trimedNames",all.y = T)
+  keggLibraryentry_split_index$converted=keggLibraryentry_split_index$Name
+ #metabolomicsData_Names_autoconvert$origin=metabolomicsData$Names[metabolomicsData$trimedNames==metabolomicsData_Names_autoconvert$trimed]
+  metabolomicsData_Names_autoconvert=merge(keggLibraryentry_split_index[,c("converted","index")],metabolomicsData_Names_autoconvert,by= "converted",all.y = T)
+  metabolomicsData_Names_autoconvert$Keggcode<-keggLibrary[metabolomicsData_Names_autoconvert$index,2]
+  papiData=metabolomicsData_Names_autoconvert[,c("Keggcode",colnames(metabolomicsData_Names_autoconvert)[colnames(metabolomicsData_Names_autoconvert) %in% colnames(metabolomicsData)])]
+  papiData=rbind(papiData[grepl("Replicates",papiData$Names,ignore.case = T),],papiData[!grepl("Replicates",papiData$Names,ignore.case = T),])
+  papiData$Keggcode[1]="Replicates"	
+  colnames(papiData)[1]="Name"
+  papiData$Name=gsub("^cpd:","",papiData$Name)
+  rownames(papiData)=1:nrow(papiData)
+  papiData$trimedNames=NULL
+  papiData$Names=NULL
+  
+  workdir=getwd()
+  if (dir.exists(paste(workdir,"/Pathway",sep=""))==FALSE){dir.create(paste(workdir,"/Pathway",sep=""))}
+  
+  write.csv(matchentry_topNbind,"Pathway/match_entry_topN.csv",row.names = F)
+  write.csv(papiData,"Pathway/papiData.csv",row.names = F)
+return(papiData)
+  }
+
+run_PAPi<-function(papiData,localDatabase = "default"){
+library(PAPi)
+  if (missing(papiData)) papiData=tk_choose.files(caption = "Select papiData.csv for PAPi analysis")
+  
+  #data(papiData)
+  papiResults <- PAPi::papi(papiData, save = FALSE, offline = TRUE, localDatabase = localDatabase)
+  
+  #data=matchentry %>% top_n( 10,1)
+standardcond=unique(as.character(papiData[1,]))
+
+if (sum(grepl("qc",standardcond,ignore.case = T))>=1) {Ref.cond=standardcond[grepl("qc",standardcond,ignore.case = T)]
+}else {Ref.cond=standardcond[1]}
+  
+  
+
+workdir=getwd()
+if (dir.exists(paste(workdir,"/Pathway",sep=""))==FALSE){dir.create(paste(workdir,"/Pathway",sep=""))}
+
+png("Pathway/PAPi_graph.png",width = 1600,height = 900)
+papiLine(
+   papiResults,
+   relative = TRUE,
+   setRef.cond = TRUE,
+   Ref.cond = Ref.cond,
+   save = FALSE
+   )
+dev.off()
+write.csv(papiResults,"Pathway/papiResults.csv",row.names = F)
+
+
+}
+
+PAPi_formatting<-function(selectfile,
+                          selectinfofile,
+                          ourput=FALSE){
+  library(tcltk)
+  library(tcltk2)
+  if (missing(selectfile)) selectfile=tk_choose.files(caption = "Select area.csv files to be converted for PAPi analysis")
+  if (missing(selectinfofile)) selectinfofile=tk_choose.files(caption = "Select info file for PAPi analysis")
+  
+  rootdir=dirname(selectfile)
+  fileName=gsub(paste0(rootdir,"/"),"",selectfile)
+  file<-read_table_generic(selectfile)
+  infofile<-read_table_generic(selectinfofile)
+  file<-data_test_rename(c("CAS","Name"),file)
+  infofile<-data_test_rename(c("Name","Condition"),infofile)
+  condition<-colnames(file) %in% infofile$Name
+   file<-data.frame(file,stringsAsFactors = F)
+   
+   newfile<-file[,c(which(condition))]
+   newfile<-cbind(as.character(file[,"Name"]),newfile)
+   colnames(newfile)[1]="Names"
+   conditionnames<-matrix(nrow=length(which(condition)),ncol = 2)
+   i=1
+   for (conditionname in which(condition)){
+     conditionnames[i,1]=colnames(file)[conditionname]
+     conditionnames[i,2]=infofile$Condition[infofile$Name==colnames(file)[conditionname]]
+     i=i+1
+   }
+   newfile$Names=as.character(newfile$Names)
+   #conditionnames<-infofile$Condition[infofile$Name==colnames(file)]
+   newfile1<-rbind(as.character(c("Replicates",conditionnames[,2])),newfile)
+   if (ourput){
+     write.csv(newfile1,paste0(rootdir,"\\PAPi_",fileName))
+   }
+   return(newfile1)
+}
 

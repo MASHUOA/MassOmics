@@ -57,15 +57,18 @@ SERRF_norm<-function (e, f, p, batch = define_batch(e, f, p), QC.index, time = "
   return(list(e = e_SERRF_pred, p = p, f = f))
 }
 
-readData = function(path =  "G:\\data\\D\\data project D.xlsx"){
+readData = function(path =  "G:\\data\\D\\data project D.xlsx",data=NULL){
   #check if it is csv of xlsx
   message("Data loading")
+  if (is.null(data)){
   if(grepl(".xlsx", path)){
     d <- openxlsx::read.xlsx(path, sheet = 1,colNames = FALSE)
   }else if(grepl(".csv", path)){
     # file = "C:\\Users\\Sili Fan\\Downloads\\val (18).csv"
     d <- data.table::fread(path)
-  }
+  } 
+  }else{d=data}
+
   
   # make "" as NA
   d[d==""] <- NA
@@ -141,6 +144,10 @@ readData_serrf_native = function(path =  "G:\\data\\D\\data project D.xlsx",info
   message("MassOmics native Data loading for SERRF")
   if(grepl(".xlsx", path)){
     d <- openxlsx::read.xlsx(path, sheet = 1,colNames = FALSE)
+  }else if(grepl(".xls", path)){
+    d <- openxlsx::read.xlsx(path, sheet = 1,colNames = FALSE)
+  }else if(grepl(".xlsm", path)){
+    d <- openxlsx::read.xlsx(path, sheet = 1,colNames = FALSE)
   }else if(grepl(".csv", path)){
     # file = "C:\\Users\\Sili Fan\\Downloads\\val (18).csv"
     d <- data.table::fread(path)
@@ -200,7 +207,7 @@ readData_serrf_native = function(path =  "G:\\data\\D\\data project D.xlsx",info
   if(nrow(eData)>0){message("Data loaded")}
   return(list(e = eData, f = fData, p = pData))
 }
-
+#' @export
 Data_prep_area_SERRF<- function(selectfile=tk_choose.files(caption = "Select area.csv files to normalized by SERRF"),
                                 selectinfofile=tk_choose.files(caption = "Select info file to normalized by SERRF"),
                                 ourput=TRUE){
@@ -316,6 +323,9 @@ SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MS
     data = readData(path=input)
   }else  if (and(file.exists(input) ,datatype=="MASSOMICS")) {
     data = readData_serrf_native(path=input,infopath = infopath)
+  }else if(!is.null(data) ){
+    data = readData(data=data)
+  
   }else{stop("Critical data input is missing!")}
   
   e = data$e
@@ -533,7 +543,7 @@ SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MS
   #             height = 8, offx = 0, offy = 0) %>% print(target = "PCAs.pptx") %>%
   #  invisible()
   
-  
+  return(Norm_finaltable)
   
   
   # doc = pptx( )
