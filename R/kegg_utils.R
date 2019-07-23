@@ -1290,6 +1290,8 @@ convert_PAPi<-function(metabolomicsData,localDatabase = "default",matchingscore=
   library(stringdist)
   library(dplyr)
   library(BiocParallel)
+  
+  library(tcltk2)
   if (missing(metabolomicsData)) metabolomicsData=read_table_generic(tk_choose.files(caption = "Select formatted data for KEGG code conversion"))
   
 
@@ -1391,17 +1393,20 @@ convert_PAPi<-function(metabolomicsData,localDatabase = "default",matchingscore=
   rownames(papiData)=1:nrow(papiData)
   papiData$trimedNames=NULL
   papiData$Names=NULL
-  
+  papiData$V1=NULL
   workdir=getwd()
   if (dir.exists(paste(workdir,"/Pathway",sep=""))==FALSE){dir.create(paste(workdir,"/Pathway",sep=""))}
   
   write.csv(matchentry_topNbind,"Pathway/match_entry_topN.csv",row.names = F)
   write.csv(papiData,"Pathway/papiData.csv",row.names = F)
+  message(paste("Result data have been saved to",paste(workdir,"/Pathway",sep="")))
 return(papiData)
   }
 
 run_PAPi<-function(papiData,localDatabase = "default"){
 library(PAPi)
+  
+  library(tcltk2)
   if (missing(papiData)) papiData=read_table_generic(tk_choose.files(caption = "Select papiData.csv for PAPi analysis"))
   papiData=papiData[!is.na(papiData$Name),]
   #data(papiData)
@@ -1429,7 +1434,7 @@ papiLine(
    )
 dev.off()
 write.csv(papiResults,"Pathway/papiResults.csv",row.names = F)
-
+message(paste("Result data have been saved to",paste(workdir,"/Pathway",sep="")))
 
 }
 
@@ -1466,6 +1471,7 @@ PAPi_formatting<-function(selectfile,
    if (output){
      write.csv(newfile1,paste0(rootdir,"\\KEGG_formated_",fileName),row.names = F)
    }
+   message(paste("Result data have been saved to",paste(rootdir,sep="")))
    return(newfile1)
 }
 
