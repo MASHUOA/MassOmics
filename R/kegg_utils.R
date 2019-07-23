@@ -1433,7 +1433,7 @@ write.csv(papiResults,"Pathway/papiResults.csv",row.names = F)
 
 PAPi_formatting<-function(selectfile,
                           selectinfofile,
-                          ourput=FALSE){
+                          output=TRUE){
   library(tcltk)
   library(tcltk2)
   if (missing(selectfile)) selectfile=tk_choose.files(caption = "Select area.csv files to be converted for PAPi analysis")
@@ -1461,8 +1461,8 @@ PAPi_formatting<-function(selectfile,
    newfile$Names=as.character(newfile$Names)
    #conditionnames<-infofile$Condition[infofile$Name==colnames(file)]
    newfile1<-rbind(as.character(c("Replicates",conditionnames[,2])),newfile)
-   if (ourput){
-     write.csv(newfile1,paste0(rootdir,"\\PAPi_",fileName))
+   if (output){
+     write.csv(newfile1,paste0(rootdir,"\\PAPi_",fileName),row.names = F)
    }
    return(newfile1)
 }
