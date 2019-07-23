@@ -1284,7 +1284,7 @@ load_smpdb<-function(path="Z:\\George skyline results\\maldiimaging\\DB\\SMPdb.c
   
 }
 
-convert_PAPi<-function(metabolomicsData,localDatabase = "default",matchingscore=0.6){
+convert_PAPi<-function(metabolomicsData,localDatabase = "default",matchingscore=0.6,top_N=10){
   library(stringr)
   library(PAPi)
   library(stringdist)
