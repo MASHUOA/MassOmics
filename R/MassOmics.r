@@ -42,6 +42,7 @@
 #' @import checkmate
 #' @import zip
 #' @import PAPi
+#' @import stringdist
 #' @importFrom stats na.omit runif
 #' @importFrom utils download.file modifyList packageVersion read.table tail
 
@@ -2260,7 +2261,7 @@ run <- function(){
   ##PAPi
   tkadd(software, "cascade", label = "Pathway analysis", menu = PAPi)
   tkadd(PAPi ,"command", label = "Format massomics data for pathway analysis", command = function() PAPi_formatting())
-  tkadd(PAPi ,"command", label = "Building KEGG database in your PC", command = function() buildDatabase())
+  tkadd(PAPi ,"command", label = "Building KEGG database in your PC", command = function() PAPi::buildDatabase())
   tkadd(PAPi ,"command", label = "Replace name by KeggCodes", command = function() convert_PAPi())
   tkadd(PAPi ,"command", label = "Run pathway analysis", command = function() run_PAPi())
 
