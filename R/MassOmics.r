@@ -43,6 +43,8 @@
 #' @import zip
 #' @import PAPi
 #' @import stringdist
+#' @import OneR
+#' @import pander
 #' @importFrom stats na.omit runif
 #' @importFrom utils download.file modifyList packageVersion read.table tail
 
