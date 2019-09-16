@@ -14,7 +14,7 @@ Packaged:
 RoxygenNote: 6.1.1
 Encoding: UTF-8
 Imports: 
-    tcltk,tcltk2,Rcpp,openxlsx,tidyr,randomForest,rfviz,ggpubr,extrafont,mzR,xcms,svDialogs,
+    tcltk,tcltk2,Rcpp,openxlsx,tidyr,randomForest,rfviz,ggpubr,extrafont,xcms,svDialogs,
     svGUI,KEGGREST,RColorBrewer,rgl,mixOmics,plyr,flux,tkrplot,multtest,XML,checkmate,pbapply,
     CAMERA,qvalue,doParallel,BiocManager,pacman,backports,BiocParallel,zip,PAPi,stringdist
 Suggests: 
