@@ -18,7 +18,6 @@
 #' @import rfviz
 #' @import ggpubr
 #' @import extrafont
-#' @import mzR
 #' @import xcms
 #' @import svDialogs
 #' @import svGUI
