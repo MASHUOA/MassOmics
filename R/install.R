@@ -11,7 +11,7 @@ install.MassOmics_dependency <- function(){
   BiocManager::install(c("KEGGREST", "mixOmics", "CAMERA", "qvalue"))
   p_install(c("openxlsx", "randomForest", "rfviz", "extrafont", "svDialogs", "svGUI", "KEGGREST", "rgl", "mixOmics", "tkrplot", "CAMERA", "qvalue"),try.bioconductor = T)
   
-  p_install(c("tcltk","Rcpp","openxlsx","tidyr","faahKO","randomForest","rfviz",
+  p_install(c("tcltk","tcltk2","stringdist","pbapply","PAPi","Rcpp","openxlsx","tidyr","faahKO","randomForest","rfviz",
               "ggpubr","extrafont","mzR","Rcpp","xcms","svDialogs","svGUI","KEGGREST",
               "RColorBrewer","rgl","mixOmics","plyr","flux","tkrplot", "xlsx","multtest","XML",
               "CAMERA","qvalue", "doParallel","ggplot2","ggplot","MALDIquant","CAMERA"),try.bioconductor = TRUE,lib=librarypath,force = T,character.only = F)

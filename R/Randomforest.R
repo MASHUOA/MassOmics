@@ -12,7 +12,9 @@ SERRF_norm<-function (e, f, p, batch = define_batch(e, f, p), QC.index, time = "
   e. = e
   if (sum(qc[QC.index] == T) < length(qc)) {
     for (i in 1:nrow(e.)) {
-      e.[i, qc] = unlist(by(data.frame(e.[i, ], qc), batch[1, ], function(x) {diff = (median(x[x[, 2], 1]) - median(x[!x[, 2], 1]))
+      e.[i, qc] = unlist(by(data.frame(e.[i, ], qc), factor(batch[1, ]), function(x) {
+        diff = (median(x[x[, 2], 1]) - median(x[!x[, 2], 1]))
+        if (is.na(diff)) diff=0
       x[x[, 2], 1] - diff}))
       }
     #message("QC level")
@@ -417,6 +419,11 @@ SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MS
   }
   SERRF.validate = RSD(norm$e[,p$sampleType=="Sample"],f,p[p$sampleType=="Sample",],cl=cl)
   raw.validate = RSD(e[,p$sampleType=="Sample"],f,p[p$sampleType=="Sample",],cl=cl)
+  
+  if (sum(is.na(SERRF.validate))==length(SERRF.validate)){
+    SERRF.validate = RSD(norm$e[,p$sampleType=="QC"],f,p[p$sampleType=="QC",],cl=cl)
+    raw.validate = RSD(e[,p$sampleType=="QC"],f,p[p$sampleType=="QC",],cl=cl)
+  }
   # stopCluster(cl)
   # PCA
   # generate PCA plot.
@@ -542,6 +549,15 @@ SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MS
   #  ph_with_vg(code = print(SERRFpca), type = "body", width = 10,
   #             height = 8, offx = 0, offy = 0) %>% print(target = "PCAs.pptx") %>%
   #  invisible()
+  if (datatype=="MASSOMICS"){
+    inputmassomics<-read.csv(input)
+    inputmassomics<-inputmassomics[,grep("CAS",colnames(inputmassomics)):grep("Name",colnames(inputmassomics))]
+    massomicsoupt<-merge(inputmassomics,Norm_finaltable[["norm"]],by.x="Name",by.y="label")[, union(names(inputmassomics), names(Norm_finaltable[["norm"]])[2:ncol(Norm_finaltable[["norm"]])])]
+    dirname(input)
+    write.table(massomicsoupt, file=paste0(dirname(input),"/Serrf_normed.csv"),row.names=FALSE, col.names=T, sep=",")
+  }
+  
+  
   
   return(Norm_finaltable)
   
