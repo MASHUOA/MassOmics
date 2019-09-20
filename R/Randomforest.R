@@ -554,7 +554,7 @@ SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MS
     inputmassomics<-inputmassomics[,grep("CAS",colnames(inputmassomics)):grep("Name",colnames(inputmassomics))]
     massomicsoupt<-merge(inputmassomics,Norm_finaltable[["norm"]],by.x="Name",by.y="label")[, union(names(inputmassomics), names(Norm_finaltable[["norm"]])[2:ncol(Norm_finaltable[["norm"]])])]
     dirname(input)
-    write.table(massomicsoupt, file=paste0(dirname(input),"/Serrf_normed.csv"),row.names=FALSE, col.names=T, sep=",")
+    write.table(massomicsoupt, file=paste0(dirname(input),"/Serrf_normed_as_",Predict_level,".csv"),row.names=FALSE, col.names=T, sep=",")
   }
   
   
