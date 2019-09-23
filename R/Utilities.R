@@ -277,14 +277,15 @@ testcolume<-function(df,testcolnames,match_exact=T){
 Creat_short_cut<-function(){
   
   int_script=paste(file.path(path.package(package="MassOmics")),"/R/runMassOmics.R", sep="")
-  
+  int_script=shortPathName(int_script)
   r_sript_path=paste0(R.home("bin"),"/Rscript.exe")
   
   switch(Sys.info()[['sysname']],
          Windows= {
            batpath=paste(file.path(path.package(package="MassOmics")),"/R/runMassOmics.bat", sep="")
-           short_cut_icon=paste(file.path(path.package(package="MassOmics")),"/R/ico_eyw_icon.ico", sep="")
-           short_cut_path=paste(file.path(path.package(package="MassOmics")),"/R/shortcut.bat", sep="")
+           batpath=shortPathName(batpath)
+           short_cut_icon=shortPathName(paste(file.path(path.package(package="MassOmics")),"/R/ico_eyw_icon.ico", sep=""))
+           short_cut_path=shortPathName(paste(file.path(path.package(package="MassOmics")),"/R/shortcut.bat", sep=""))
            #short_cut_path_bk=paste(file.path(path.package(package="MassOmics")),"/R/shortcut_bk.bat", sep="")
            #short_cut_path_line=readLines(con=short_cut_path)
            #short_cut_path_line_bk=readLines(con=short_cut_path_bk)

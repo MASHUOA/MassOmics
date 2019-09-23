@@ -280,6 +280,7 @@ SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MS
   
   start = Sys.time()
   message(start)
+  message(paste("Log transformation beforehand:",Log_trans))
   message(paste("Prediction level:",paste(SampleType,sep = "+",collapse = "+")))
  
   
