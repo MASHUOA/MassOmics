@@ -509,7 +509,7 @@ DataCorrection <- function(){
   
   frameCorrection<- tkframe(win1$env$tb3  ,borderwidth=2, relief="groove",padx=5,pady=5)
   tkgrid(tklabel(frameCorrection,text="Centralised batches based on"), comboBox1,pady= 10, padx= 10, sticky="W")
-  tkgrid(tklabel(frameCorrection,text="normalization method"),comboBox2, pady= 10, padx= 10, sticky="w")
+  tkgrid(tklabel(frameCorrection,text="Normalization method"),comboBox2, pady= 10, padx= 10, sticky="w")
   
   frameButtonC<- tkframe(win1$env$tb3)
   tkgrid(tklabel(frameButtonC,text=""),  submitC.but,submitd.but, open.but , pady= 10, padx= 10, sticky="w")

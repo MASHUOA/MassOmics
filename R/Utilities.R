@@ -272,3 +272,38 @@ testcolume<-function(df,testcolnames,match_exact=T){
   
   return(list(passcol=passcol,renamecol=renamecol,failcol=failcol,duplicatecol=duplicatecol))
 }
+
+
+Creat_short_cut<-function(){
+  
+  int_script=paste(file.path(path.package(package="MassOmics")),"/R/runMassOmics.R", sep="")
+  
+  r_sript_path=paste0(R.home("bin"),"/Rscript.exe")
+  
+  switch(Sys.info()[['sysname']],
+         Windows= {
+           batpath=paste(file.path(path.package(package="MassOmics")),"/R/runMassOmics.bat", sep="")
+           short_cut_icon=paste(file.path(path.package(package="MassOmics")),"/R/ico_eyw_icon.ico", sep="")
+           short_cut_path=paste(file.path(path.package(package="MassOmics")),"/R/shortcut.bat", sep="")
+           #short_cut_path_bk=paste(file.path(path.package(package="MassOmics")),"/R/shortcut_bk.bat", sep="")
+           #short_cut_path_line=readLines(con=short_cut_path)
+           #short_cut_path_line_bk=readLines(con=short_cut_path_bk)
+           #identical(short_cut_path_line,short_cut_path_line_bk)
+           writeLines(text=c(paste(r_sript_path,"--ess",int_script),"pause"),con=batpath)
+           writeLines(text=c(
+                             "@echo off",
+                             quote('echo Set oWS = WScript.CreateObject("WScript.Shell") > CreateShortcut.vbs'),
+                             'echo sLinkFile = "%HOMEDRIVE%%HOMEPATH%\\Desktop\\MassOmics.lnk" >> CreateShortcut.vbs',
+                             'echo Set oLink = oWS.CreateShortcut(sLinkFile) >> CreateShortcut.vbs',
+                             paste0('echo oLink.TargetPath = "',batpath,'" >> CreateShortcut.vbs'),
+                             paste0('echo oLink.IconLocation = "',short_cut_icon,'" >> CreateShortcut.vbs'),
+                             'echo oLink.Save >> CreateShortcut.vbs',
+                             'cscript CreateShortcut.vbs',
+                             'del CreateShortcut.vbs'
+                             ),con=short_cut_path)
+           shell(short_cut_path)
+         },
+         Linux  = {message("Sorry the Massomics shortcut only available for windows now.")},
+         Darwin = {message("Sorry the Massomics shortcut only available for windows now.")}) 
+  
+}
