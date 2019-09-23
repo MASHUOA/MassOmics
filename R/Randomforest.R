@@ -265,7 +265,7 @@ Data_prep_area_SERRF<- function(selectfile=tk_choose.files(caption = "Select are
 #' 
 #' 
 #' 
-SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MSDIAL","MASSOMICS"),infopath=NULL){
+SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MSDIAL","MASSOMICS"),infopath=NULL,Log_trans=F){
   library(tcltk)
   if ('&'(!file.exists(input) , is.null(data))){input =tk_choose.files(caption = "Select area.csv files to normalized by SERRF")}
   if ('&'(datatype=="MASSOMICS" , is.null(data))){infopath =tk_choose.files(caption = "Select caseinfo files")}
@@ -352,7 +352,7 @@ SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MS
     e[e=="NaN"]<-NA
     
     #e[e<0]<-NA
-    
+
     
     
   if((sum(is.na(e)))>0){
@@ -362,14 +362,19 @@ SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MS
       e[i, is.na(e[i,])] = 1/2 * min(e[i,!is.na(e[i,])])
     }
     
-    
+
+      
     
     Par_na_impute<-function(i,e){
       e[i, is.na(e[i,])] = 1/2 * min(e[i,!is.na(e[i,])])
     }
     
   }
-  
+    
+  if (Log_trans) {
+      e<-log(e)
+      e[(e==-Inf)] <- 0
+    }
   
   e = data.matrix(e)
   
