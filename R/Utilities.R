@@ -273,7 +273,16 @@ testcolume<-function(df,testcolnames,match_exact=T){
   return(list(passcol=passcol,renamecol=renamecol,failcol=failcol,duplicatecol=duplicatecol))
 }
 
-
+#' Creat a shortcut for Massomics
+#'
+#' This function will creats a handful shortcut to Massomics. By clicking the shortcut, user will get the enviorment setup and MassOmics GUI launched automatically.
+#' 
+#' @return None
+#'
+#' @examples
+#' Creat_short_cut()
+#'
+#' @export
 Creat_short_cut<-function(){
   
   int_script=paste(file.path(path.package(package="MassOmics")),"/R/runMassOmics.R", sep="")

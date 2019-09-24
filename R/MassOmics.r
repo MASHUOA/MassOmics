@@ -7,13 +7,12 @@
 #' @docType package
 #' @name MassOmics
 #' @author George GUO \email{George.GUO@@auckland.ac.nz}
-#' @references 
+#' @references TBD
 #' @keywords package
 #' @import tcltk
 #' @import tcltk2
 #' @import Rcpp
 #' @import openxlsx
-#' @import tidyr
 #' @import randomForest
 #' @import rfviz
 #' @import ggpubr
@@ -25,7 +24,6 @@
 #' @import RColorBrewer
 #' @import rgl
 #' @import mixOmics
-#' @import plyr
 #' @import flux
 #' @import tkrplot
 #' @import multtest
@@ -42,7 +40,6 @@
 #' @import zip
 #' @import PAPi
 #' @import stringdist
-#' @import OneR
 #' @import pander
 #' @importFrom stats na.omit runif
 #' @importFrom utils download.file modifyList packageVersion read.table tail
