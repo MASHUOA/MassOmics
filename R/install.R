@@ -2,7 +2,7 @@
 install.MassOmics_dependency <- function(){
   if (length(.libPaths())!=1){librarypath=.libPaths()[2]}else{librarypath=.libPaths()[1]}
   
-  print("Installing packages, that may take a while!")
+  message(paste0("Installing packages to ",librarypath," that may take a while!"))
   install.packages(c("pacman","devtools","backports"))
   library("pacman")
   library("devtools")

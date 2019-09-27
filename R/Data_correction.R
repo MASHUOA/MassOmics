@@ -113,7 +113,7 @@ DataCorrection <- function(){
   
   win1 <- tktoplevel()
   tkwm.title(win1,"Data correction")
-  win1$env$nb <- tk2notebook(win1, tabs = c("   Intro   ", "   Contaminants  ", "  Multiple IS   ", "  Batch effect  "))
+  win1$env$nb <- tk2notebook(win1, tabs = c("   Intro   ", "  Scaling  ","   Contaminants  ", "  Multiple IS   ", "  Batch effect  "))
   tkpack(win1$env$nb, fill = "both", expand = TRUE)
   win1$env$tb1 <- tk2notetab(win1$env$nb, "  Multiple IS   ")
   
@@ -549,4 +549,96 @@ DataCorrection <- function(){
   tkgrid(tklabel(win1$env$tb0 ,text="Requirements:"), pady= 5, padx= 5, sticky="w")
   tkgrid(tklabel(win1$env$tb0,text="QCs, negative controls, and samples are organised in the\n subject information spreadsheet as shown by the example"), pady= 5, padx= 5, sticky="w")
   tkgrid( frameButtonE, pady= 5, padx= 5)
+  
+  #################### Scaling ###########################
+  win1$env$tb5 <- tk2notetab(win1$env$nb, "  Scaling  ")
+  
+  Scaling<-function(){
+    ScalingT <- ScaleType[[as.numeric(tclvalue(tcl(comboBox_scaling,"getvalue")))+1]]
+    ImputeT <- ImputeType[[as.numeric(tclvalue(tcl(comboBox_Impute,"getvalue")))+1]]
+    Data_scaling_impute(ScalingT=ScalingT,Impute=ImputeT)
+  }
+    
+  ImputeType <- c("NULL","KNN","Minimum", "Zero")
+  
+  ScaleType <- c("NULL","Log","Mean","Pareto")
+  comboBox_Impute <- tkwidget(background="white",win1 ,"ComboBox",editable=FALSE,values=ImputeType ,textvariable=tclVar("KNN"),width=9)
+  comboBox_scaling <- tkwidget(background="white",win1 ,"ComboBox",editable=FALSE,values=ScaleType ,textvariable=tclVar("Log"),width=9)
+  
+  frameButtonF<- tkframe(win1$env$tb5)
+  
+  Scaling.but<-tkbutton(win1, text="Choose file", command=Scaling,width=9)
+  tkgrid(tklabel(frameButtonF,text="Imputation method"),comboBox_Impute, pady= 10, padx= 10, sticky="w")
+  tkgrid(tklabel(frameButtonF,text="scaling method"),comboBox_scaling, pady= 10, padx= 10, sticky="w")
+  tkgrid(tklabel(frameButtonF,text="Run"),  Scaling.but , pady= 10, padx= 10, sticky="w")
+  
+  tkgrid(tklabel(win1$env$tb5 ,text="Select Massomics integration result to have a data scaling"), pady= 5, padx= 20, sticky="w")
+  
+  tkgrid(frameButtonF, pady= 5, padx= 5)
+  
 }
+
+Data_scaling_impute<-function(path=NULL,ScalingT=NULL,Impute=NULL){
+  library(tcltk)
+  library(tcltk2)
+  library(data.table)
+  library(impute)
+  if (is.null(path)){path=tk_choose.files(filter = matrix(c( "CSV", ".csv","excel file", ".xls", "excel file", ".xlsx"),3, 2, byrow = TRUE),
+                                          caption  = "Choose integration result to have a data scaling")}
+  
+  data=fread(path)
+  datacol=colnames(data)[!(colnames(data) %in% c("CAS","Ref.Ion" , "Total.ID(n=3)","Library.match","Ret.Time" ,"RT.shfit.Lower","Warnings" ,"Name"))]
+  datafcol=colnames(data)[(colnames(data) %in% c("CAS","Ref.Ion" , "Total.ID(n=3)","Library.match","Ret.Time" ,"RT.shfit.Lower","Warnings" ,"Name"))]
+  
+  data=as.data.frame(data)
+  for (col in datacol){
+    data[,col]=as.numeric(as.character(data[,col]))  
+  }
+  
+  # impute missing value.
+ 
+  e=data[,datacol]
+  e[e==0]<-NA
+  e[e=="Inf"]<-NA
+  e[e=="-Inf"]<-NA
+  e[e==""]<-NA
+  e[e=="NaN"]<-NA
+  e=as.matrix(e)
+  if((sum(is.na(e)))>0 && !is.null(Impute)){
+    
+    switch(Impute,
+           Minimum= {e[is.na(e)] = min(e[!is.na(e)])},
+           
+           Zero= {e[is.na(e)] = 0},
+           
+           KNN= {e=try(impute.knn(e)$data,silent = T)}
+           
+           )
+  }
+  
+  if(!is.null(ScalingT)){
+    
+    switch(ScalingT,
+           Log= {
+                e<-log(e)
+                e[(e==-Inf)] <- 0
+                },
+           
+           Mean= {e=e/mean(na.omit(e))},
+           
+           Pareto = {
+                     for (row in nrow(e)){
+                     e[row,]=e[row,]/sqrt(sd(e[row,]))
+                     }
+                    }
+           
+    )
+  }
+  
+  data=cbind(data[,datafcol],e)
+  
+  write.csv(data,file = paste0(tools::file_path_sans_ext(path)," Impute_",ifelse(is.null(Impute),"None",Impute)," Scaling_",ifelse(is.null(ScalingT),"None",ScalingT),".csv"),row.names = F)
+  
+  message("Done")
+  
+  }
