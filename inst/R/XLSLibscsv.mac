@@ -1,0 +1,163 @@
+!Version G1701DA D.03.00 Copyright © Agilent Technologies 1989-2006
+! Localization reference numbers from 33785
+! 
+! 
+! 
+! Converted: Thu Jan 12 12:25:17 2006
+!-------------------------------------------------------------
+!File: XLSLibS.mac
+ 
+Name AO_DDEInitiate
+  
+Local AO_I, AO_dosrun$,aex,awin, justTheProgram, justTheArguments
+  
+
+  
+Return
+  
+  
+Name AO_PokeLibSRes
+  
+Local AO_Npeaks, AO_NumHits, AO_I, AO_J, AO_CurrentLine, AO_PokeValue$,justTheArguments
+  justTheArguments = _datapath$ + _datafile$ + "\MSRep.csv"
+  OPEN justTheArguments FOR OUTPUT AS #1
+  PRINT USING #1,"Data file Name :%/",_datapath$ _datafile$
+  
+  !write the header on the excel sheet
+  PRINT USING #1,"Data file Name :%/",_datapath$ "," _datafile$
+  PRINT USING #1,"Acquired date :%/",_Dateacquired$ 
+  PRINT USING #1,"Method Name :%/",_methpath$ _methfile$
+  PRINT USING #1,"Sample Name :%/",_dataname$
+  PRINT USING #1,"Library 1 :%/",Qual_Lib1$
+  PRINT USING #1,"Library 2 :%/",Qual_Lib2$
+  PRINT USING #1,"Library 3 :%/",Qual_Lib3$
+  
+  !Asting$ = ""CPD,RT"" +"",""+ ""Scan number"" +"",""+ ""Area"" +"",""+ ""Baseline Heigth"" +"",""+ ""Absolute Heigth"" +"",""+ ""Peak Width min"" +"",""+ ""Hit Number"" +"",""+ ""Hit Name"" +"",""+ ""Quality"" +"",""+ ""Mol Weight"" +"",""+ ""CAS Number"" +"",""+ ""Library"" +"",""+ ""Entry Number Library"" +""/""
+  
+  PRINT USING #1, "CPD,RT,Scan number,Area,Baseline Heigth,Absolute Heigth,Peak Width min,Hit Number,Quality,Mol Weight,CAS Number,Library,Entry Number Library,Hit Name/"
+   !get integration results
+  PeakVars 0, top, R0
+  AO_Npeaks = npeaks
+ 
+  
+  ! fill the excel sheet with peak results
+  AO_currentline = 10
+  AO_I = 1
+  While AO_I <= AO_Npeaks
+    !get peak results
+    PeakNumber AO_I, top,R0,X
+    
+	
+    !DdePoke AO_hchan2,"r"+Val$(AO_CurrentLine)+"c7",AO_PokeValue$
+    
+    !get libsearch results
+    PbmSearch Qual_Lib1$, X
+    GetScalars results ,X,,1
+    If Quality < Qual_Hit1 And Len(Qual_Lib2$) > 0 Then
+      PbmSearch Qual_Lib2$, X
+      GetScalars results ,X,,1
+      If Quality < Qual_Hit2 And Len(Qual_Lib3$) > 0 Then
+        PbmSearch Qual_Lib3$, X
+        GetScalars results ,X,,1
+      EndIf
+    EndIf
+    AO_NumHits = Num_Hits
+    
+    If AO_NumHits = 0 Then
+      !increment counters
+      AO_CurrentLine=AO_CurrentLine+1
+    Else
+      !loop through lib results
+      AO_J = 1
+      While AO_J <= AO_NumHits
+        !get libsearch results
+        GetScalars results ,X ,,AO_J
+        PRINT USING #1, "%", Val$(AO_I)+ ","
+    !poke peak results
+    !DdePoke AO_hchan2,"r"+Val$(AO_CurrentLine)+"c1",Val$(AO_I)
+    Sprint AO_PokeValue$ Using "###.###", Ret_time
+	PRINT USING #1, AO_PokeValue$ + ","
+	
+    !DdePoke AO_hchan2,"r"+Val$(AO_CurrentLine)+"c2",AO_PokeValue$
+    Sprint AO_PokeValue$ Using "#####", Scan_num
+	PRINT USING #1, AO_PokeValue$ + ","
+	
+    !DdePoke AO_hchan2,"r"+Val$(AO_CurrentLine)+"c3",AO_PokeValue$
+    Sprint AO_PokeValue$ Using "##########", Peak_area
+	PRINT USING #1, AO_PokeValue$ + ","
+	
+    !DdePoke AO_hchan2,"r"+Val$(AO_CurrentLine)+"c4",AO_PokeValue$
+    Sprint AO_PokeValue$ Using "##########", BslPeakHeight
+	PRINT USING #1, AO_PokeValue$ + ","
+	
+    !DdePoke AO_hchan2,"r"+Val$(AO_CurrentLine)+"c5",AO_PokeValue$
+    Sprint AO_PokeValue$ Using "##########", AbsPeakHeight
+	PRINT USING #1, AO_PokeValue$ + ","
+	
+    !DdePoke AO_hchan2,"r"+Val$(AO_CurrentLine)+"c6",AO_PokeValue$
+    Sprint AO_PokeValue$ Using "###.###", Peak_Width
+	PRINT USING #1, AO_PokeValue$ + ","
+	
+        !poke libsearch results
+		PRINT USING #1, Val$(AO_J) + ","
+		
+		Sprint AO_PokeValue$ Using "####", Quality
+		PRINT USING #1, AO_PokeValue$ + ","
+		Sprint AO_PokeValue$ Using "####.###", Mol_Wt 
+		PRINT USING #1, AO_PokeValue$ + ","
+		PRINT USING #1, Cas_Num$ + ","
+		PRINT USING #1, Lib$  + ","
+		PRINT USING #1, val$(Entry_Num)  + ","
+		printname$=Hit_Name$
+		IF (INSTR(Hit_Name$, "#")>0) THEN 
+		printname$="invalid_name"
+		ENDIF
+		PRINT USING #1, """" + Hit_Name$ + """" + "/"
+        !increment counters
+        AO_CurrentLine=AO_CurrentLine+1
+        AO_J = AO_J +1
+      EndWhile
+    EndIf
+    
+  
+    !increment counter
+    AO_I=AO_I+1
+  EndWhile
+  CLOSE #1
+
+  !copy and paste window#2 into EXCEL spreadsheet  
+  
+Return
+  
+  
+Name AO_RoundUp
+  
+ 
+Return
+  
+  
+Name AO_XLSLibSResMain
+  
+  !
+
+  If CheckObj("R0") = 1 And Len(excelpath$) > 0 Then
+  file _datapath$+expfile$
+  doint
+    AO_DDEInitiate
+    AO_PokeLibSRes
+    AO_RoundUp
+	Print _$(93788,"library search report exported!")
+  Else
+    Print _$(33788,"No chromatographic object in R0 or _excelpath$ is incorrect!")
+  EndIf
+  value = FINDNEXTFILE (expfiles, "expfile$")
+
+  
+Return
+  
+  
+ 
+!--------------------------------------------------------
+! Next Localization reference number 33789
+! new block 35161 - 35181 added 5/16/2006
+

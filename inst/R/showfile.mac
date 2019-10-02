@@ -1,0 +1,17 @@
+NAME Show_file
+LOCAL prompt$, ext$, path$, file$, status
+LOCAL fmt$, msg$
+prompt$ = "Please find and select the file you wish to see..."
+ext$ = "*." ! allow only files with ".txt" extension
+path$ = "E:\" ! initial directory
+file$ = "" ! initial filename is null
+SELECTFILE 2, prompt$, ext$, path$, file$, status
+IF _Button=0 THEN ! if the user did not click on Cancel
+! Show the file in the drive and directory indicated
+! by path$, with name the value of file$. Use the
+! system macro ViewFile. (See below)
+!
+Viewfile path$ file$
+ENDIF
+PRINT `Path$ is: "' path$ `"', ` File$ is: "' file$ `"'
+RETURN

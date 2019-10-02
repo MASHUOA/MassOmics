@@ -1,0 +1,721 @@
+!Version G1701DA D.02.00 Copyright © Agilent Technologies 1989-2004
+! Localization reference numbers from 17810
+!
+!
+!
+! Converted: Mon Oct 18 12:27:17 2004
+!-------------------------------------------------------------
+Name enh_nextspec
+  CheckVar "X", _$(17810,"mass spectrum")   ! msda.mac
+  Scan SCAN_NUM + 1,X
+  If _MSCONT = 1
+    RteInt X
+  EndIf
+  Draw 1,X
+Return
+Name enh_prevspec
+  CheckVar "X", _$(17811,"mass spectrum")   ! msda.mac
+  Scan SCAN_NUM - 1,X
+  If _MSCONT = 1
+    RteInt X
+  EndIf
+  Draw 1,X
+Return
+  
+!   Version C.2.00 Copyright (c) Hewlett-Packard 1994
+Name ENVBARX  ! Enhanced DA menu MS Mode
+  Rmouse = 0    (insert it after the line: Name ENVBARX...) !!!easyEICs
+
+  MenuBeg
+  check_eda=val(getinistring$("","PCS","EdA_state"))
+  check_MDF=val(getinistring$("","PCS","MDF_state"))
+  check_MSV=val(getinistring$("","PCS","MSV_state"))
+  check_MACS=val(getinistring$("","PCS","MACS_state"))
+  edaplusoptions=1
+  if _enhapp<>2
+	check_eda=0
+	check_mdf=0
+	check_msv=0
+	check_macs=0
+  endif
+
+  MenuNew lmenu_f$ !"&File"
+  If BatchDAMode = 0
+    new$ = "ldnewfile"
+    next$ = "nextfile"
+  Else
+    new$ = "BloadFile"
+    next$ = "BnextFile"
+  EndIf
+  MenuCmd _$(17812,"&Load Data File..."),new$,_$(17813,"Prompts for selection of data file")
+  MenuCmd _$(17814,"&Next Data File"),next$,_$(17815,"Load the next Data File from the FileSelect List.")
+  MenuCmd _$(17816,"List &Header..."),"hdrlist_",_$(17817,"Displays information from data file header")
+
+if 1=0						! disable for G1701FA
+  FileSize (_exepath$ + "DataFileViewer.exe")
+  If size > 0 Then
+    MenuCmd _$(32710,"View Data File Headers..."),"DOSRUN _exepath$ + `DataFileViewer.exe'",_$(32711,"Run alternative datafileheader Viewer/Manager.")
+  Else
+    AO_DFV = 2
+    MenuCmd _$(32712,"View Data File Headers..."),"DOSRUN _exepath$ + `DataFileViewer.exe'",_$(32713,"Alternative datafileheader Viewer/Manager not installed!"),AO_DFV
+  EndIf
+endif						! end of disable fro G1701FA
+
+  MenuCmd _$(17818,"Edit &File Info..."),"edfil_",_$(17819,"Edit sample header information"),calcit
+  if getinfo("MS_TYPE") >= 1 and getinfo("MS_TYPE") <= 7
+    MenuCmd _$(17820,"&Take Snapshot"),"MACRO `mssnap',GO", _$(17821,"Capture new data and draw TIC from R0")
+  EndIf
+  !    MENUSEP
+  !    MENUCMD "&Print Trace + Spectrum", "macro `tsprint.mac',g","Prints window #1 and window #2 to one page"
+  !    MENUCMD "Print Selected &Window...","macro `printwin.mac',g","Prints any window to one page"
+  !    MENUSEP
+  !    if orphan = 1
+  !    endif
+  !    MENUSEP
+  !    MENUCMD "EDA C&onfiguration...","Macro _macropath$+`editdef.mac',g","Edit user defaults"
+  MenuCmd _$(17822,"Su&btract Background (BSB)"),"enh_bsb",_$(17823,"Subtract spectrum in X from entire file suppressing negative peaks")
+  If _enhapp = 2
+    MenuSep
+    MenuCmd lmenu_selsig$,"setsignals_",lmenu_selsigstr$,setsigvar
+  EndIf
+  MenuSep
+  MenuCmd _$(17826,"&Select Printer..."),"SelectPrinter",_$(17827,"Select Default or RunMethod printer")
+  MenuCmd _$(17828,"Printer &Setup..."),"enh_printset",_$(17829,"Configure hardcopy output.")
+  MenuCmd _$(17830,"&Print..."),"enh_selprint", _$(17831,"Print window(s) or method")
+  MenuStp _$(17832,"&Abort")
+  MenuSep
+  MenuCmd _$(17833,"Export &Data To CSV File..."),"ask_exportops",_$(17834,"Creates CSV file with selected data")
+  MenuCmd _$(17835,"Exp&ort Data to AIA format..."),"aiaexp_",_$(17836,"Export raw signal files into *.CDF files")
+  MenuCmd _$(17837,"I&mport AIA Raw Data Files..."),"aiaimp_",_$(17838,"Import *.CDF files into *.D directories for processing")
+  FileSize _exepath$+"nonhpms.mac"
+  If size > 0
+Local m$
+    m$="macro _exepath$+`nonhpms.mac',go"
+    MenuCmd _$(17839,"&Convert non-ChemStation MS Data"),m$,_$(17840,"Converts foreign data files to ChemStation MS data file format")
+  EndIf
+  menusep
+  menucmd lmenu_zip$,"dozipping",lmenu_zipstr$
+
+
+  If BatchDAmode = 0
+    MenuSep
+    MenuCmd accel_1$+"   "+shortdata$[1],"restoredata 1",lmenumsg_f$+data$[1]
+    MenuCmd accel_2$+"   "+shortdata$[2],"restoredata 2",lmenumsg_f$+data$[2]
+    MenuCmd accel_3$+"   "+shortdata$[3],"restoredata 3",lmenumsg_f$+data$[3]
+    !menusep
+    !menucmd "&Change Analysis Mode...","selapp_","Change the Data Analysis Mode"
+  EndIf
+  MenuSep
+
+  menucmd _$(18036,"Set Lab Name..."),"getlabname",_$(18037,"Enter Lab Name")
+  MenuCmd _$(17841,"E&xit"),"BYE",_$(17842,"Ends the Data Analysis session")
+
+!
+!--------------------------------- end of File menu ------------------------------------------
+!  
+  If BatchDAmode = 0
+    MenuNew lmenu_m$ !"&Method"
+    MenuCmd _$(17843,"&Run Method..."),"runmethod",_$(17844,"Runs a Data Analysis method")
+  Else
+    MenuNew _$(17845,"Batch &Method")
+    MenuCmd _$(17846,"&Run Batch Method..."),"runmethod",_$(17847,"Runs a Data Analysis method")
+    MenuCmd _$(17848,"&Batch Reprocess..."),"batchreprocess",_$(17849,"ReProcesses Batch Data")
+  EndIf
+  MenuCmd _$(17850,"R&un CustomAnalysis"),"ExecDeuser",_$(17851,"Execute method CustomAnalysis macro (deuser.mac)")
+  If orphan = 1
+    MenuSep
+    If BatchDAmode = 0
+      MenuCmd  _$(17852,"Loa&d Method..."),"LOADMETHOD" ,_$(17853,"Loads a Data Analysis method")
+      MenuCmd _$(17854,"Save &Method..."),"SAVEMETHOD",_$(17855,"Saves a Data Analysis method")
+    Else
+      MenuCmd  _$(17856,"Loa&d Batch..."),"LOADBatch" ,_$(17857,"Loads a Batch Method and File")
+      MenuCmd _$(17858,"Save Batch &Method..."),"BSAVEMETHOD",_$(17859,"Saves a Data Analysis method")
+    EndIf
+  EndIf
+
+if 1=0					! disable for G1701FA
+  FileSize (_exepath$ + "MethInfo.exe")
+  If size > 0 Then
+    MenuCmd _$(32714,"View Methods..."),"DOSRUN _exepath$ + `MethInfo.exe'",_$(32715,"Run alternative method file viewer.")
+  Else
+    AO_MFV = 2
+    MenuCmd _$(32716,"View Methods..."),"DOSRUN _exepath$ + `MethInfo.exe'",_$(32717,"Alternative method file viewer not installed!"),AO_MFV
+  EndIf
+endif					! end of disable for G1701FA  
+
+  MenuSep
+  MenuCmd _$(17860,"&Edit Method..."),"edaeditmeth",_$(17861,"Select the Reports to be run as part of the method")
+  MenuCmd _$(17862,"E&dit CustomAnalysis..."),"EditDeuser",_$(17863,"Edit method CustomAnalysis macro (deuser.mac)")
+  MenuSep
+Local autosimmsg$
+  autosimmsg$=_$(17864,"Automatically generate a SIM acquisition method from a quantitation method.")
+  MenuCmd _$(17865,"&Generate AutoSIM Method..."),"GenAutoSim_",autosimmsg$
+  autosimmsg$=_$(17866,"Edit method SIM data acquisition parameters")
+  MenuCmd _$(17867,"Edit &SIM Parameters..."),"EditSim_",autosimmsg$
+  
+  !    MENUCMD "&View Method...","MACRO _macropath$+`viewmeth.mac',GO","Select method portions for viewing or printing"
+  If BatchDAmode = 0
+    If orphan = 1
+      MenuSep
+      MenuCmd accel_1$+"   "+shortmeth$[1],"restoremeth 1",lmenumsg_m$+meth$[1]
+      MenuCmd accel_2$+"   "+shortmeth$[2],"restoremeth 2",lmenumsg_m$+meth$[2]
+      MenuCmd accel_3$+"   "+shortmeth$[3],"restoremeth 3",lmenumsg_m$+meth$[3]
+      MenuSep
+      MenuCmd lbatchmode$,"macro _exepath$+`batchda.mac',go",lbatchmodestr$
+    EndIf
+  Else
+    MenuCmd _$(17870,"Non-&Batch Mode"),"EndBatchMode",_$(17871,"Reverts to normal ")+_enhapp$+_$(17872," ChemStation")
+  EndIf
+!
+!--------------------------------- end of Method menu --------------------------------------
+
+if 1=0		! eliminate for G1701FA
+    MENUNEW _$(32718,"&Reprocessing")
+    Menucmd _$(32719,"Load Sequence..."),"LoadTheSeq",_$(32720,"Load a sequence for Reprocessing") !no menu control, always active
+    menucmd DAEditSeq$,"Slt_Edit_UI",_$(32722,"Edit a sequence"),dareprovar
+    menucmd _$(32723,"Save Sequence..."),"SaveTheSeq",_$(32724,"Save a sequence"),dareprovar
+    menucmd _$(32725,"Print Sequence"),"PrintTheSeq",_$(32726,"Displays last reprocess sequence"),dareprovar
+    menucmd _$(32727,"Run Sequence"),"RunTheSeq",_$(32728,"Run a Reprocessing sequence"),dareprovar
+!
+!--------------------------------- end of Reprocessing menu ---------------------------------
+endif !end of no reprocessing menu
+  
+  MenuNew _$(17873,"&Chromatogram")
+  MenuCmd _$(17874,"Chromatogram Sca&ling..."),"selscale",_$(17875,"Allows specification of method scaling parameters")
+  MenuCmd _$(17876,"&Draw Chromatogram - No Labels"),"redrawTIC",_$(17877,"Redraws TIC to window #2")
+  MenuCmd _$(17878,"Dra&w Chromatogram With Labels"),"enh_chromrelabel",_$(17879,"Relabels TIC to window #2")
+  MenuCmd _$(17880,"Select C&hromatogram Labels..."),"enh_chromlabels",_$(17881,"Allows selection of Peak Labels")
+  MenuSep
+  if _enhapp <> 3 !no RFG
+     AO_custmenu$ = _addonpath$+"Redraw.mac"
+     FileSize AO_custmenu$
+     If size > 0
+        AO_Descr$ = _$(32729,"Redraws the Total Ion Chromatogram.")
+        MenuCmd _$(32730,"Redraw TIC"),"macro _addonpath$+`Redraw.mac',go", AO_Descr$
+     EndIf
+  endif
+  MenuCmd _$(17882,"Extract Ion &Chromatograms..."),"dochro 0",_$(17883,"Prompts for ions to extract and display")
+  if _enhapp <> 3 !no RFG
+     Menucmd _$(32731,"EASY EICS...."),"macro _addonpath$+`mouseswitch.mac',go",_$(32732,"Turns the new mouse functions ON/OFF"),ezRmouse	!easyEIC
+  endif
+  MENUCMD DoChro1cmd$,"dochro 1",DoChro1msg$ 
+  MenuCmd _$(17884,"Display Ion Chromatograms in &Merged Format"),"tog_format",_$(17885,"Display Ion Chromatograms in Merged Format."),tog_fmt
+
+if _enhapp <> 3 !no RFG
+  AO_custmenu$ = _addonpath$+"AnnPBM.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    AO_Descr$ = _$(32733,"Annotate Chromatogram with PBM results (hit #1 only).")
+    MenuCmd _$(32734,"Annotate Chromatogram with PBM Results"),"macro  _addonpath$+`AnnPBM.mac',go", AO_Descr$
+  EndIf
+
+  AO_custmenu$ = _addonpath$+"CorChrom.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    AO_Descr$ = _$(32735,"Creates correlation chromatogram.")
+    MenuCmd _$(32736,"Draw Correlation Chromatogram"),"macro _addonpath$+`corchrom.mac',go", AO_Descr$
+  EndIf
+
+
+  AO_custmenu$ = _addonpath$+"Smooth.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    AO_Descr$ = _$(32737,"Smooths Chromatogram and redraws R0 register.")
+    MenuCmd _$(32738,"Smooth Chromatogram"),"macro  _addonpath$+`Smooth.mac',go", AO_Descr$
+  EndIf
+
+
+  if check("variable","edaplusoptions")=1
+    AO_custmenu$ = _addonpath$+"ConCatDF.mac"
+    FileSize AO_custmenu$
+    If size > 0 and check_eda=1
+      AO_Descr$ = _$(32739,"Concatenate TICs of selected data files.")
+      MenuCmd _$(32740,"Link Chromatograms"),"macro  _addonpath$+`ConCatDF.mac',go", AO_Descr$
+    EndIf
+  endif
+
+  if check("variable","edaplusoptions")=1
+    AO_custmenu$ = _addonpath$+"Spline.mac"
+    FileSize AO_custmenu$
+    If size > 0 and check_eda=1
+      AO_Descr$ = _$(32741,"Splines Chromatogram after entering Spline Factor.")
+      MenuCmd _$(32742,"Spline Chromatogram..."),"macro  _addonpath$+`Spline.mac',go", AO_Descr$
+    EndIf
+  endif
+endif !end of RFG
+
+  MenuSep
+  MenuCmd _$(17886,"S&elect Integrator..."),"eqintsel",_$(17887,"Temporarily select an integrator")
+  MenuCmd _$(17888,"MS Signal I&ntegration Parameters..."),"Intparms_",_$(17889,"Prompts for integration parameters ( MS Signal )")
+  MenuCmd _$(17890,"Secondary Signal In&tegration Parameters..."),"Intprms2_",_$(17891,"Prompts for integration parameters ( GC Signal(s) )"),alignmode
+  MenuCmd _$(17892,"&AutoIntegrate"),    "DOAUTOINT", _$(17893,"AutoIntegrate R0 and refresh window 2"), autointitem
+  MenuCmd _$(17894,"&Integrate"),"doint",_$(17895,"Integrates current chromatogram(s) using user supplied parameters and redraws (RTEINT R0)")
+
+if _enhapp <> 3 !no RFG
+  AO_custmenu$ = _addonpath$+"LblArea.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    AO_Descr$ = _$(32743,"The chromatogram will be integrated and labeled with the peak area.")
+    MenuCmd _$(32744,"Integrate and Label Peak Areas"),"macro  _addonpath$+`LblArea.mac',go", AO_Descr$
+  EndIf
+endif
+  MenuCmd _$(17896,"Integration Re&sults..."),"tab results,,r0",_$(17897,"Displays a tabulation of integration results")
+  !MENUSEP
+  MenuCmd _$(17898,"Percent &Report"),"dapctrpt",_$(17899,"Generates an area percent report")
+
+if _enhapp <> 3 !no RFG
+  AO_custmenu$ = _addonpath$+"PRepChr.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    AO_Descr$ =_$(32745,"Creates and Prints a Percentage Report Plus Chromatogram.")
+    MenuCmd _$(32746,"Percentage Report With Chromatogram"),"macro _addonpath$+`PRepChr.mac',go", AO_Descr$
+  EndIf
+  
+  AO_custmenu$ = _addonpath$+"Perf.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    AO_Descr$ = _$(32747,"Performance Report of the raw chromatographic data in R0.")
+    MenuCmd _$(32748,"Performance Report..."),"macro  _addonpath$+`Perf.mac',go", AO_Descr$
+  EndIf
+
+  AO_custmenu$ = _addonpath$+"PkPurity.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    AO_Descr$ = _$(32749,"The integrated peaks are labeled with the number of compounds according to Peak Purity algorithm.")
+    MenuCmd _$(32750,"Display Peak Purity"),"macro  _addonpath$+`PkPurity.mac',go", AO_Descr$
+  EndIf
+endif !end of RFG
+!
+!----------------------------------- end of Chromatogram menu --------------------------
+
+
+  MenuNew _$(17900,"&Spectrum")
+  !menucmd "Pre&vious","enh_prevspec","Draws previous scan to window 1"
+  !menucmd "Ne&xt","enh_nextspec","Draws next scan to window 1"
+  MenuCmd _$(17901,"&Add"),     "enh_addsub", _$(17902,"Add two spectra (Y+X) and draw to window 1")
+  MenuCmd _$(17903,"&Subtract"),"enh_addsub 1", _$(17904,"Subtract two spectra (Y-X) and draw to window 1")
+  MenuCmd _$(17905,"&Tabulate"),"enh_tabspec", _$(17906,"Tabulates MS Spectrum in X register")
+  Menusep
+  MenuCmd _$(17907,"S&elect Library..."),"QUALPARMS",_$(17908,"Specify library(s) for search.")
+  MenuCmd _$(17909,"E&dit Strategy..."),"EDITSTRATEGY",_$(17910,"Edit PBM strategy parameters")
+  MenuCmd _$(17911,"Ed&it Library..."),"MACRO `pbmedit.mac',GO", _$(17912,"Edit a spectral library")
+  MenuSep
+  MenuCmd _$(17913,"&Library Search Report..."),"qualbeg",_$(17914,"Prompts for parameters and generates a report")
+  
+if _enhapp <> 3 !no RFG
+  AO_custmenu$ = _addonpath$+"LSAll.mac"
+  FileSize AO_custmenu$
+  If size > 0 and check_eda=1
+    AO_Descr$ = _$(32753,"Individual Library Search Report for Every Selected Library.")
+    MenuCmd _$(32754,"Multiple Library Search Reports..."),"macro  _addonpath$+`LSAll.mac',go", AO_Descr$
+  EndIf
+
+
+  if check("variable","edaplusoptions")=1 and check_eda=1
+    MenuCmd _$(32755,"List Library Entries..."),"ListLib",_$(32756,"Select a library and the entries will be listed.")
+  endif
+
+  MenuCmd _$(32757,"Show Record Number..."),"AO_ShowRecLib",_$(32758,"Show Record Number of Library 1.")
+  AO_custmenu$ = _addonpath$+"UpdPBM.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    AO_Descr$ = _$(32759,"Updates the PBM Library to Edit with the Selected Library Result.")
+    MenuCmd _$(32760,"Update PBM Library with Selected Library Result"),"macro  _addonpath$+`UpdPBM.mac',go", AO_Descr$
+  EndIf
+
+  if check("variable","edaplusoptions")=1
+    AO_custmenu$ = _addonpath$+"SelMSLib.mac"
+    FileSize AO_custmenu$
+    If size > 0 and check_eda=1
+      AO_Descr$ = _$(32761,"Creates Reference List from Library and calculates correlation chromatograms.")
+      MenuCmd _$(32762,"Create Correlation Chromatograms Library Spectra..."),"macro  _addonpath$+`SelMSLib.mac',go", AO_Descr$
+    EndIf
+  endif
+endif !end of RFG
+
+  MenuSep
+  MenuCmd _$(17915,"&Change Spectral Display..."),"specfix_",_$(17916,"Alter the display of the current mass spectrum")
+Local msg$
+  msg$=_$(17917,"Enter a mass spectrum (6 ions) and locate it in your data file.")
+  MenuCmd _$(17918,"&Find Mass Spectrum"),"macro _macropath$+`findspec.mac',go",msg$
+  AO_Descr$ = _$(32763,"Library #1 will be entirely exported as JCAMP file.")
+!!  MenuCmd _$(32764,"AO: Export Library to JCAMP Format"),"AO_JCAMPout",AO_Descr$
+
+  If _nist_installed = 1
+    Macro _exepath$+"nistmenu.mac",go
+    if _drs_installed = 1 and _enhapp = 2 !ONLY for Enhanced mode....
+      Macro _exepath$+"tri_utils.mac",go
+    EndIf
+  EndIf
+  check4mpp 0
+! 
+!--------------------------------- end of spectrum menu ------------------------------ 
+!  
+  
+  MenuNew _$(17919,"Cali&brate")
+  MenuCmd _$(17920,"&Set Up Quantitation..."),"DoSetupQuant",_$(17921,"Set quant database information")
+  MenuCmd _$(17922,"&AutoQuant Setup"),"eqautosetup",_$(17923,"Automatic Quant Setup")
+
+  bqmenu	! bruce Quimby's ion optimized - in envcomm3.mac
+
+  MenuCmd _$(32821,"Convert Target Compounds to SemiQuant Compounds"),"T_2_SemiQuant",_$(32822,"Converts Target Compounds to SemiQuant Compounds")
+  MenuCmd _$(32823,"Create Responses for new SemiQuant compounds..."),"Make_SQ_Resp",_$(32824,"Creates Responses for new SemiQuant compounds")
+
+  if check("variable","edaplusoptions")=1
+    AO_custmenu$ = _addonpath$+"L2QDB.mac"
+    FileSize AO_custmenu$
+    If size > 0 and check_eda=1
+      AO_Descr$ = _$(32765,"Creates a quantitation database from the selected RTL library")
+      MenuCmd _$(32766,"Create Quant Database from RTL Library..."),"macro _addonpath$+`L2QDB.mac',go",AO_Descr$
+    EndIf
+  endif
+  menusep
+  MenuCmd _$(17924,"&Edit Compounds..."),"mseditcpnds 1",_$(17925,"Allows viewing and editing of all compound information")
+
+  if check("variable","edaplusoptions")=1
+    AO_custmenu$ = _addonpath$+"MoveComp.mac"
+    FileSize AO_custmenu$
+    If size > 0
+      AO_Descr$ = _$(32767,"Rearrange the order of the compounds in the calibration table.")
+      MenuCmd _$(32768,"Reorder Compounds..."),"macro _addonpath$+`MoveComp.mac',go", AO_Descr$
+    EndIf
+  endif
+  MenuCmd _$(17930,"&List..."),"enh_callist",_$(17931,"Prompts for Method information to list (compounds, cal, etc)")
+  Menusep
+
+  MenuCmd _$(17926,"&Update..."),"enh_calupdate",_$(17927,"Prompts for update calibration information")
+  If BatchDAmode = 1
+    MenuCmd _$(17928,"&Batch Recalibrate"),"askBatchRecal",_$(17929,"Automatically recalibrates Batch Method")
+  EndIf
+  
+  
+!  AO_custmenu$ = _addonpath$+"nccomp.mac"
+!  FileSize AO_custmenu$
+!  If size > 0
+!    AO_Descr$ = _$(32769,"Update Calibration Table for Calibration on non-calibrated compounds.")
+!    MenuCmd _$(32770,"AO: Update CalTable for Cal-on-non-Cal Compounds"),"macro _addonpath$+`nccomp.mac',go", AO_Descr$
+!  EndIf
+
+  AO_custmenu$ = _addonpath$+"CalData.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    AO_Descr$ = _$(32773,"Make hardcopy of the calibration data of the specified compound number.")
+    MenuCmd _$(32774,"Print Calibration Curve..."),"macro _addonpath$+`CalData.mac',go", AO_Descr$
+  EndIf
+
+  
+  Menusep
+  MenuCmd _$(17932,"&Clear..."),"enh_calclear",_$(17933,"Prompts for Clear option (Level, Responses, All Compounds)")
+
+!
+!---------------------------------------- end of calibrate menu -------------------------------
+! 
+ 
+  MenuNew _$(17934,"&Quantitate")
+  MenuCmd _$(17935,"&Calculate"),"qt 1,0,`s'",_$(17936,"Calculates and generates a report to screen"),calcit
+  MenuCmd _$(17937,"&Generate Report..."),"doquant",_$(17938,"Prompts for parameters and generates a report using Quant Results (qt 0,[],[])"),quantit
+
+if _enhapp <> 3 !no RFG
+  if check("variable","edaplusoptions")=1
+    AO_custmenu$ = _addonpath$+"NameSum.mac"
+    FileSize AO_custmenu$
+    If size > 0
+      AO_Descr$ = _$(32775,"Summary Quant Report with added section Summed by Name (name shared by target compounds).")
+      MenuCmd _$(32776,"Summary Report with Compound Groups..."),"macro _addonpath$+`NameSum.mac',go", AO_Descr$
+    EndIf
+  endif
+endif !end of RFG
+  MenuSep
+Local classic$
+  classic$=_$(17939,"Classic Reports are the original G1034A/B style quantitative reports.")
+  MenuCmd _$(17940,"&Use Classic Reports"),"use_classic",classic$,classicreports
+  MenuCmd _$(17941,"Report &Options..."),"editvalEPA",_$(17942,"Edit quantitative report format options"),enhreports
+  MenuSep
+  MenuCmd _$(17943,"Report &Non-Target Peaks..."),"ask_tic 3",_$(17944,"Report Non-Target Peaks to Printer"),lscit
+  MenuCmd _$(17945,"Use &Method Aligned GC trace"),"qalign ",_$(17946,"Performs GC alignment based on Method factors before quant"),quantalign
+  MenuCmd _$(17947,"Trace Mode &Quant..."),"trace_quant",_$(17948,"Record and display quantitation calculations for a single compound")
+  
+  If EXCEL = 1
+    If mscustrpt=1
+      CRLshortmenu
+    Else
+      MenuSep
+      MenuCmd _$(17949,"Cre&ate/Modify Template/Database..."),"slcttemp",_$(17950,"Allows setting up or editing of a Custom Reports template (slcttemp)")
+      MenuSep
+      MenuCmd _$(17951,"&Print Custom Report"),"printtemp",_$(17952,"Prints a Custom Report for the current data file (printtemp)")
+      MenuCmd _$(17953,"&Update Database"),"lognowdb",_$(17954,"Logs the current data file results to the method database (lognowdb)")
+      MenuCmd _$(17955,"Run &EXCEL..."),"runexcel",_$(17956,"Runs Excel with Custom Reports loaded (runexcel)")
+      MenuCmd _$(17957,"List Default &Files"),"listfile",_$(17958,"Lists the currently defined default Custom Reports method files")
+    EndIf
+  EndIf
+!
+!------------------------------------ end of Quantitate menu -----------------------------------------
+! 
+ 
+if _enhapp <> 3 !no RFG
+  MenuNew _$(32826,"Export &Reports")
+  AO_custmenu$ = _addonpath$+"HTMLPerc.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    AO_Descr$ = _$(32777,"Percentage Report Plus Chromatogram in HTML format.")
+    MenuCmd _$(32778,"&Percentage Report to HTML"),"macro _addonpath$+`HTMLPerc.mac',go",AO_Descr$
+  EndIf
+
+  AO_custmenu$ = _addonpath$+"HTMLLibs.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    AO_Descr$ = _$(32779,"Library Search Report Plus Chromatogram and Mass Spectra in HTML format.")
+    MenuCmd _$(32780,"&Library Search Report to HTML"),"macro _addonpath$+`HTMLLibs.mac',go",AO_Descr$
+  EndIf
+
+  AO_custmenu$ = _addonpath$+"HTMLQRep.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    AO_Descr$ = _$(32781,"Quant Report Plus Chromatogram in HTML format.")
+    MenuCmd _$(32782,"&Quant Report to HTML"),"macro _addonpath$+`HTMLQRep.mac',go",AO_Descr$
+  EndIf
+
+  MenuSep !XLS reports
+  local XLdescr$
+  strdim XLdescr$,3
+  XLDescr$[3]=_$(18035,"Excel MUST be installed in order to use this option")
+  AO_custmenu$ = _addonpath$+"XLSintr.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    XLDescr$[1] = _$(32783,"Integration Results exported to EXCEL (XLS format).")
+    MenuCmd _$(32784,"Integration Results Report to XLS"),"AO_XLSReps `XLSintr.mac'",XLDescr$[xlmenuvar+1],xlmenuvar
+  EndIf
+
+  AO_custmenu$ = _addonpath$+"XLSQres.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    XLDescr$[1] = _$(32785,"Quantitation Results exported to EXCEL (XLS format).")
+    MenuCmd _$(32786,"Quantitation Results Report to XLS"),"AO_XLSReps `XLSQres.mac'",XLDescr$[xlmenuvar+1],xlmenuvar
+  EndIf
+
+  AO_custmenu$ = _addonpath$+"XLSLibs.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    XLDescr$[1] = _$(32787,"Library Search Results exported to EXCEL (XLS format).")
+    MenuCmd _$(32788,"Library Search Results Report to XLS"),"AO_XLSReps `XLSLibs.mac'",XLDescr$[xlmenuvar+1],xlmenuvar
+  EndIf
+  
+  AO_custmenu$ = _addonpath$+"XLSLibs.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    XLDescr$[1] = _$(92787,"Library Search Results exported to CSV (csv format).")
+    MenuCmd _$(92788,"Library Search Results Report silent mode"),"AO_XLSReps `XLSLibscsv.mac'",XLDescr$[xlmenuvar+1],xlmenuvar
+  EndIf
+  
+  AO_custmenu$ = _addonpath$+"XLSLibs.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    XLDescr$[1] = _$(92789,"Library Search Results of selected files exported.")
+    MenuCmd _$(92790,"Library Search Report for selected folder"),"AO_XLSReps `XLSLibscsvbat.mac'",XLDescr$[xlmenuvar+1],xlmenuvar
+  EndIf
+  
+  AO_custmenu$ = _addonpath$+"XLSCCurv.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    XLDescr$[1] = _$(32789,"Calibration Curve Data exported to EXCEL (XLS format).")
+    MenuCmd _$(32790,"Calibration Curve Data Report to XLS"),"AO_XLSReps `XLSCCurv.mac'",XLDescr$[xlmenuvar+1],xlmenuvar
+  EndIf
+
+  AO_custmenu$ = _addonpath$+"XLSMSRep.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    XLDescr$[1] = _$(32791,"Select Multiple Reports exported to EXCEL (XLS format).")
+    MenuCmd _$(32792,"Multiple Reports to XLS"),"AO_XLSReps",XLDescr$[xlmenuvar+1],xlmenuvar
+  EndIf
+
+  MenuSep !XML reports
+
+  AO_custmenu$ = _addonpath$+"XMLIRep.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    AO_Descr$ = _$(32793,"Integration Results exported in XML format.")
+    MenuCmd _$(32794,"Integration Results Report to XML"),"macro _addonpath$+`XMLIRep.mac',go",AO_Descr$
+  EndIf
+
+  AO_custmenu$ = _addonpath$+"XMLQRep.mac"
+  FileSize AO_custmenu$
+  If size > 0
+    AO_Descr$ = _$(32795,"Quantitation Results exported in XML format.")
+    MenuCmd _$(32796,"Quantitation Results Report to XML"),"macro _addonpath$+`XMLQRep.mac',go",AO_Descr$
+  EndIf
+endif !end of RFG
+!
+!--------------------------------------- end of Export Reports menu ------------------------------ 
+
+  MenuNew _$(17959,"&Tools")
+  MenuCmd _$(17960,"DO&LIST..."),"DOLIST_",_$(17961,"Generate a selected report for a list of files")
+  MenuCmd _$(17962,"DO&SCAN..."),"DOSCAN_",_$(17963,"Generate a selected report for selected scans")
+  MenuCmd _$(17964,"&Process Scan List"),"Processscan",_$(17965,"Process selected scan list"),DOSCANCHK
+  MenuSep
+  MenuCmd _$(17966,"E&xport 3-D Data..."),"macro _exepath$+`export3d.mac',go",_$(17967,"Allows creation of ASCII file with time/mass/abundance")
+  !MenuCmd _$(17968,"Export Multiple Files to Spreadsheet..."),"ExportToSS",_$(17969,"Allows selection of files to export to predetermined spreadsheet template")
+  !MenuCmd _$(17970,"Configure Export to Spreadsheet Template..."),"ExportToSS 1",_$(17971,"Allows selection of data fields for subsequent export operations")
+  MenuSep
+  MenuCmd _$(17972,"Locate A &Compound..."),"tool_",_$(17973,"Find a compound from the calibration table in the current data file (tool [])")
+  MenuCmd _$(17974,"Locate &All Compounds"),`tool_ "all"',_$(17975,"Find all compounds from the calibration table in the current file (tool ""all"")")
+  !    menusep
+  !    menucmd "Align Now using Method Points","GCAlign 1,1","Aligns GC trace based on method stored alignment points"
+  !    menucmd "Setup GC Signal Alignment...","setalign","Initiates alignment setup for Mixed Mode data",alignmode
+  !    menucmd "Auto GC Signal Alignment selection...","setalign 2","Allows selection of automatic GC signal alignment"
+  !    menucmd "Align using temporary points","GCalign -1,1","Aligns GC trace using previous values from Alignment procedure",aligntemp
+  !    menucmd "Save temporary points to method","alignfactors 1,1,1","Saves current points to Method",aligntemp
+  MenuSep
+  MenuCmd _$(17976,"Set &Overlay Parameters..."),"setoverlay_",_$(17977,"Allows Offset/Scale Factor entry")
+	MenuCmd _$(17978,"O&verlay Chromatograms..."),"macro _addonpath$+`overlayswitch.mac',g",_$(17979,"Overlays TIC or Ion for Selected Files")!eqnhance  EasyEIC
+  !    menusep
+  !    menucmd "&QA Check Report...","qachk_ 1","Generate QA/QC check report"!eqnhance
+  MenuSep
+  MenuCmd _$(17980,"Si&gnal to Noise check..."),"DoSignalToNoise ,1",_$(17981,"Determines Signal/Noise ratio")
+  MenuSep
+  MenuCmd _$(17982,"Cha&nge Data State..."),"changestatus_",_$(17983,"Change Status of datafile"),dstatitems
+  MenuCmd _$(17984,"Op&tions..."),"enh_daoptions",_$(17985,"Allows selection of Integration labels, mouse action, stack, etc.")
+  MenuCmd _$(17986,"Configure Report &Headers..."),"ConfigHeader",_$(17987,"Allows selection and placement of report header items.")
+  MenuSep
+  MenuCmd _$(17988,"Create Screen Results for C&urrent File"),"screen 1",_$(17989,"(Re)creates screen results using method screen database")
+  MenuCmd _$(17990,"Generate Screen Report for C&urrent File"),"screen ,,`s'",_$(17991,"Executes SCREEN command to monitor")
+  MenuCmd _$(17992,"Generate/Print Screen Report for Current &File"),"screen ,1,`s'",_$(17993,"Executes SCREEN command to printer")
+  MenuCmd _$(17994,"Generate/Print Screen Reports for Multiple &Files..."),"DoSCList",_$(17995,"uses DOLIST for Screen Results to printer")
+  MenuCmd _$(17996,"Specify &Method Screen Database..."),"setscreendb_",_$(17997,"Allows respecification of Screen Database for current method")
+
+  menucmd _$(18038,"Run Screener in Run Method"),"togglescreener" ,_$(18039,"When Checked, Screener will run when method is run."),_screenmeth
+  menusep
+  MenuCmd _$(17998,"Change Screen &Database Parameters..."),"setscreendb_ ,,1",_$(17999,"Allows window, sub method, qual range changes")
+  MenuCmd _$(18000,"L&ist Screen Database..."),"list_ ,1",_$(18001,"Lists SCD compounds to screen")
+  !menucmd "L&ist Screen Database...","list_ ,1,1","Lists SCD compounds to screen"
+  MenuCmd _$(18002,"&Exclude Zero Qualifiers"),"Zquals",_$(18003,"Qualifiers of zero abundance - compound NOT FOUND"),daqviewitem
+  MenuSep
+
+  if check("variable","edaplusoptions")=1 and check_eda=1
+    AO_custmenu$ = _addonpath$+"QDB2SCD.mac"
+    FileSize AO_custmenu$
+    If size > 0
+      AO_Descr$ = _$(32797,"Creates a screen database from the quant data base.")
+      MenuCmd _$(32798,"Create Screen Database from Quant Database..."),"macro _addonpath$+`QDB2SCD.mac',go", AO_Descr$
+    EndIf
+    AO_Descr$ = _$(32799,"Creates a screen database from the selected library.")
+    MenuCmd _$(32800,"Create Screen Database from Library..."),"makescreendb",AO_Descr$
+    AO_Descr$ = _$(32801,"Creates a screen database/library from the selected tab file.")
+    MenuCmd _$(32802,"Create Screen Database Tab File..."),"rtl_import",AO_Descr$
+    menusep
+  endif
+  MenuCmd _$(18004,"Cop&y Window..."),"wincopy_",_$(18005,"Copy a window to the Clipboard")
+  MenuCmd _$(18006,"&Reset Windows"),"resetw",_$(18007,"Arrange all windows")
+  
+!
+!------------------------------------- end of tools menu -----------------------------------
+  
+  AddToolMenu_ 1,1		!!add OPTIONS (toolbar) menu; datbmnu.mac
+                                ! limited to ENHANCED ONLY in datbmnu.mac
+!
+!-------------------------------------- end of options menu -------------------------------------
+!
+
+  MenuNew _$(18008,"&View")
+  MenuCmd _$(18009,"&EasyID"),"easyid",_$(18010,"Merge a datafile and ID file (easyid)")
+  MenuCmd _$(18011,"QE&dit Quant Result"),"qedit_",_$(18012,"Review or Edit quantitative results (qedit)"),quantit
+  MenuCmd _$(18013,"Edit &Non-Target Peaks"),"lscedit",_$(18014,"Allows selection of reported Non-Target compounds"),lscit
+  MenuCmd _$(18015,"Parametric &Retrieval"),"MACRO `paramret.mac',GO", _$(18016,"Find library compounds by attributes")
+  MenuCmd _$(18017,"&Align GC"),"setalign",_$(18018,"Initiates alignment setup for Mixed Mode data"),alignmode
+  MenuCmd _$(18019,"Re&view Peak Purity..."),"Macro _macropath$+`pkpur.mac',go",_$(18020,"Review integration results for peak purity")
+  MenuSep
+  MenuCmd _$(18021,"Results &Screener"),"Qscreen_",_$(18022,"Create/Review/Edit Screen results (locked methods only)"),lockitem
+  filesize _macropath$+"lockview.mac"
+  if size > 0
+     MenuCmd _$(18023,"RTLock Set&up"),"lockview_",_$(18024,"Enter RT Locking setup mode")
+  endif
+  if _enhapp <> 3 !no RFG
+    Menusep 
+    MenuCmd _$(32803,"Analyze Multiple Data Files..."),"AO_GoMulti_",_$(32804,"Switch to Select Multi Data File View.") 
+    AO_Descr$ = _$(32805,"Switch to Select Multi Spectra Processing View.")
+    MenuCmd _$(32806,"Analyze Multiple Spectra..."),"ao_goMspec_",AO_Descr$ 
+  endif !end of RFG
+!
+!--------------------------------------- end of View menu -------------------------------------------
+    Local custmenu$
+    custmenu$ = _exepath$[1:Len(_exepath$)-6]+"msmacros\addon.mac"
+    FileSize custmenu$
+    If size > 0
+     Macro custmenu$,go !load custom menu
+    EndIf
+!
+!--------------------------------------- end of customer's custom menu -------------------------------
+  ! Additional code for ChemAccess A.02.01 SR2
+  !
+  ! Load the AddonTop.mac (Addon macro for Top module)
+  ! if exists.
+
+  Local castart$
+  castart$ = _exepath$[1:Len(_exepath$)-6]+"msmacros\AddonDA.mac"
+  FileSize castart$
+  If size > 0
+    Macro castart$,go   !load ChemAccess startup macro and menu
+  EndIf
+  ! End of additional code
+  
+
+  FileSize _exepath$+"netdabar.mac"		!  !NetMSD functions hook
+  If size > 0
+    Macro _exepath$+"netdabar.mac",go
+  EndIf
+ 
+!
+!--------------------------------------- end of ChemAcces and NetMSD hook -------------------------------
+   
+if check_macs=1  
+  MenuNew _$(32825,"&Macros")
+  MenuCmd _$(32807,"&Start Logging Macros"),"AO_LoggingON",_$(32808,"Set logging on."),AO_LogON
+  MenuCmd _$(32809,"Stop &Logging Macros"),"AO_LoggingOff",_$(32810,"Set logging off."),AO_LogOff
+  MenuSep
+  MenuCmd _$(32811,"List Variables and &Macros"),"symboldump",_$(32812,"Show variables and macros loaded in Command Processor.")
+  MenuCmd _$(32813,"List Commands and &Functions"),"Commands",_$(32814,"Show available commands and functions.")
+  menusep
+  menucmd _$(32815,"&Writing Macros Help"),"help 4008",_$(32816,"Displays using and writing macros online book.")
+  menucmd _$(32817,"&System Commands Help"),"help 4009",_$(32818,"Displays system commands help topic.")
+  !menucmd _$(32819,"&Advanced Macro Examples"),"help",_$(32820,"Displays examples of macros.")
+endif
+
+!
+!--------------------------------------- end of Macros menu -------------------------------
+ 
+  filesize _exepath$+"ecmmenu.mac"
+  if size > 0
+     macro _exepath$+"ecmmenu.mac",go
+  endif
+!
+!--------------------------------------- end of ECM menu -------------------------------
+
+  MenuNew _$(18025,"&Help")
+  !    MENUSTP "&Abort"
+  !    MENUSEP
+  MenuCmd _$(18026,"&Help Topics"),"envhelp",_$(18027,"Display available help topics")
+  !MENUCMD "&Search...","SID","Start help and display search"
+  !menucmd "&Tutorial...","envhelp 1101","Tutorial for Environmental DA"
+  !MENUSEP
+  !menucmd  "Clean Up Macro &Remains","cleanall 1" ,"Remove remains of aborted macros"
+  !menucmd  "&Log Errors to File","TopLog","Track macro errors to a file",errorlog
+  !menusep
+  MenuCmd _$(18029,"&Review Revision History..."),"revhistory",_$(18030,"Show which revisions of Software have been installed.")
+  MenuCmd _$(18031,"&View Revision Readme file"),"ReadMeMS",_$(18032,"Display readmems.htm")
+     macro _exepath$+"zipcrit-DA.mac"
+     zipmenu
+     menusep
+  MenuCmd _$(18033,"&About..."),"envdaversion 1",_$(18034,"Display Enhanced Quantitation software information")
+
+
+  MenuEnd MSBAR
+  Remove ENVBARX
+  
+  
+  
+  
+  
+! Globalization Summary,C:\msdchem\MSEXE\,enhmsbar.mac,17810,18049
+  
+!--------------------------------------------------------
+! Next Localization reference number 18040
+  
