@@ -4,7 +4,7 @@
 \alias{PeakDiagnosis}
 \title{Peak diagnosis by overlay multiple chromatograms}
 \usage{
-PeakDiagnosis(font.size = 0.5)
+PeakDiagnosis(path = "GC-Peak Diagnosis Report.csv", font.size = 0.5)
 }
 \arguments{
 \item{font.size}{Size of report font}

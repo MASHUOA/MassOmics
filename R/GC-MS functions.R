@@ -61,8 +61,9 @@ GCMS_integration<-function(output = "GC-MS Result",
   Graphic.df<-data.frame()
   filenames <- dir(conditions)
   filenames <- filenames[grep(c(".cdf$|.mzXML$"),filenames, ignore.case=TRUE)]
-  
-  
+  thread <- round(nrow(library_file_org)/200,digits = 0)
+  if (thread>=6) {thread=6}
+  if (thread<1) {thread=1}
   for (q in 1:length(filenames)) {
     findScanTime=NULL
     res<-try(findScanTime <- xcmsRaw(filename = paste(conditions, filenames[q], sep = "/")))
@@ -100,7 +101,7 @@ GCMS_integration<-function(output = "GC-MS Result",
     if (GGReport=="Slow"){
     
       
-        integrationresult=parLapply(cl=autoStopCluster(makeCluster(try(detectCores()))),
+        integrationresult=parLapply(cl=autoStopCluster(makeCluster(thread)),
                                              1:nrow(library_file),
                                              Par_peakintegrate_slow,
                                              library_file,
@@ -127,7 +128,7 @@ GCMS_integration<-function(output = "GC-MS Result",
     if (GGReport=="Fast"){
     
     
-    surefinal$Base.Peak=unlist(parLapply(cl=autoStopCluster(makeCluster(try(detectCores()))),
+    surefinal$Base.Peak=unlist(parLapply(cl=autoStopCluster(makeCluster(thread)),
                                          1:nrow(library_file),
                                          Par_peakintegrate,
                                          library_file,
@@ -850,6 +851,7 @@ amdis_id_Summary<-function(workdir= NULL,
 #'
 #' @export
 PeakDiagnosis <- function(path="GC-Peak Diagnosis Report.csv",font.size=0.5){
+  if (!file.exists(path)){path=tcltk::tk_choose.files(default ="GC-Peak Diagnosis Report.csv", caption="choose the Peak Diagnosis Report.csv",multi = F)}
   IntegrationReport<-read.csv(path,stringsAsFactors = F)
   require(lattice)
   dev.new.OS()
