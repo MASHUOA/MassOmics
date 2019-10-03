@@ -138,10 +138,16 @@ Return
   
 Name AO_XLSLibSResMain
   
-  !
-
+  expfiles=FINDFIRSTFILE(_datapath$+"*.D","expfile$","S")
+  value = 0
+  While value = 0
   If CheckObj("R0") = 1 And Len(excelpath$) > 0 Then
 
+  FILE _datapath$+expfile$
+  !macro "opencont.mac"
+  !opencont _datapath$+expfile$
+  RunMethod
+  
   doint
     AO_DDEInitiate
     AO_PokeLibSRes
@@ -150,7 +156,8 @@ Name AO_XLSLibSResMain
   Else
     Print _$(33788,"No chromatographic object in R0 or _excelpath$ is incorrect!")
   EndIf
-  
+  value = FINDNEXTFILE (expfiles, "expfile$")
+  EndWhile
   
 Return
   

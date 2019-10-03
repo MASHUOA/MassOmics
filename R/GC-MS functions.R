@@ -63,7 +63,6 @@ GCMS_integration<-function(output = "GC-MS Result",
   filenames <- filenames[grep(c(".cdf$|.mzXML$"),filenames, ignore.case=TRUE)]
   
   
-  
   for (q in 1:length(filenames)) {
     findScanTime=NULL
     res<-try(findScanTime <- xcmsRaw(filename = paste(conditions, filenames[q], sep = "/")))
@@ -111,15 +110,15 @@ GCMS_integration<-function(output = "GC-MS Result",
                                              Ion.bin,
                                              name.file)
         
-        Graphic.df<-data.frame()
+        
         Graphic.dflist<-list()
         for (h in 1:nrow(library_file)){
           surefinal$Base.Peak[h]<-integrationresult[[h]]["Peakvalue"]
           Graphic.dflist[[h]]<-as.data.frame(integrationresult[[h]]["Graphic.df"])
           #message(h)
         }
-        
-        Graphic.df<-data.table::rbindlist(Graphic.dflist)
+        surefinal$Base.Peak=unlist(surefinal$Base.Peak)
+        Graphic.df<-rbind(Graphic.df,data.table::rbindlist(Graphic.dflist))
         #Graphic.df<-dplyr::bind_rows(Graphic.dflist)
   
     }
@@ -144,7 +143,7 @@ GCMS_integration<-function(output = "GC-MS Result",
     names(surefinal)[2] <- name.file
     
     if (!exists("final.df")){
-      final.df <- surefinal
+      final.df <- as.data.frame(surefinal)
       colnames(final.df)=c("Name",filenames[q])
       confirmation <- paste("File", q, "(", name.file,")", "done!", sep = " ")
       message(confirmation)
@@ -262,7 +261,10 @@ GCMS_integration<-function(output = "GC-MS Result",
   
   ## Save Files
   message("Save file")
-  if (GGReport=="Slow"){write.csv(Graphic.df,file="GC-Peak Diagnosis Report.csv")}
+  if (GGReport=="Slow"){
+    colnames(Graphic.df)=stringr::str_replace(colnames(Graphic.df),"Graphic.df.","")
+    write.csv(Graphic.df,file="GC-Peak Diagnosis Report.csv")
+    }
   ifelse(intensity_type=="Peak Height",ValueType<-"PeakHeight",ValueType<-"PeakArea")
   sheet <- paste(output,"(", ValueType ,")", sep="")
   store <- paste(workdir, "\\", sheet, ".csv", sep = "")
@@ -847,8 +849,8 @@ amdis_id_Summary<-function(workdir= NULL,
 #' PeakDiagnosis()
 #'
 #' @export
-PeakDiagnosis <- function(font.size=0.5){
-  IntegrationReport<-read.csv("GC-Peak Diagnosis Report.csv")
+PeakDiagnosis <- function(path="GC-Peak Diagnosis Report.csv",font.size=0.5){
+  IntegrationReport<-read.csv(path,stringsAsFactors = F)
   require(lattice)
   dev.new.OS()
   if(exists("redwarning")){
@@ -869,7 +871,7 @@ PeakDiagnosis <- function(font.size=0.5){
     )
     print(xyp)
   } else {
-    IntegrationReport<-read.csv("GC-Peak Diagnosis Report.csv")
+    IntegrationReport<-read.csv(path,stringsAsFactors = F)
     dev.new.OS()
     
     xyp<-xyplot(Intensity~Retention.Time| factor(Metabolite.Names), groups=Sample.Names, type="l", data=IntegrationReport,
@@ -1152,7 +1154,7 @@ Par_peakintegrate_slow<-function(h,library_file,findScanTime,raw_data,intensity_
   
   if (sum(EICupper<scanrangeL,EIClower>scanrangeU,(EICmzlower)>mzacqrangeU,(EICmzupper)<mzacqrangeL,na.rm = T)>=1) {
     Peakvalue=0
-
+    abundance=data.frame(rt=NA,intensity=NA)
   }else{
     
     IonExtract <-xcms::getEIC(raw_data,mzrange=cbind(EICmzlower,EICmzupper),rtrange=cbind(EIClower,EICupper))
