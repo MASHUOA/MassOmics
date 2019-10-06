@@ -910,8 +910,8 @@ create_sub_library <- function(workdir=tk_choose.dir(caption = "Select working d
     cbVal <- as.character(tclvalue(convert_MSPtoMSLcbcbValue))
     if (cbVal=="0"){convert<-FALSE}
     if (cbVal=="1"){convert<-TRUE}
-    entryfile=tcltk::tk_choose.files(default = "unique_Entry_no.txt",
-                                     multi = FALSE, caption = "Select the unique entry file.TXT")
+    entryfile=tcltk::tk_choose.files(default = "merged_library_entries_File.csv",
+                                     multi = F, caption = "Select the merged library entries file in csv format")
     message(paste("Generate msp for",entryfile,"\nusing lib2nist.exe in",as.character(tclGetValue("lib2nistpath")),"\nGenerate MSL library as well:",convert))
     lib2nistpath=as.character(tclGetValue("lib2nistpath"))
     MSP_generate_lib2nist(unique_Entry_no=entryfile,lib2nistpath = lib2nistpath,convert_MSPtoMSL=convert)
@@ -928,7 +928,7 @@ create_sub_library <- function(workdir=tk_choose.dir(caption = "Select working d
   
   convert_MSPtoMSLfun.but <- tkbutton(TMS, text="MSP->MSL", command=msp_to_msl1,width=10)
   
-  lib2nistpath="E:/lib2nist"
+  lib2nistpath="C:\\NIST17\\MSSEARCH"
   tclSetValue("lib2nistpath",lib2nistpath)
   lib2nistpathentry <- tkentry(background="white",TMS,width="12",textvariable="lib2nistpath",validate="key")
   ### all the button function
@@ -961,7 +961,7 @@ create_sub_library <- function(workdir=tk_choose.dir(caption = "Select working d
   
   ## Upper 2
   frameUpper2 <- tkframe(frameOverall,relief="groove",borderwidth=2,padx=5,pady=5)
-  tkgrid(tklabel(frameUpper2,text="Specify lib2nist folder"),lib2nistpathentry,sticky="w")
+  tkgrid(tklabel(frameUpper2,text="Specify NIST folder"),lib2nistpathentry,sticky="w")
   tkgrid(tklabel(frameUpper2,text="Generate MSP library"),GeneratMSP.but1, sticky="w")
   tkgrid(tklabel(frameUpper2,text="Convert MSP to MSL library"),convert_MSPtoMSLcb, sticky="w")
   tkgrid(tklabel(frameUpper2,text="Already have the MSP library?"),convert_MSPtoMSLfun.but, sticky="w")
@@ -1181,12 +1181,12 @@ ChemstationLibraryEntry<-function(workdir=NULL,rootdir=dirname(workdir)){
   
   newMergedFile <- c()
   libraryname=""
-  message(paste("Xls files found, first 5 files:"))
+  message(paste(length(excelFiles),"Xls files found, first 5 files:"))
   message(paste(excelFiles[1:5],collaps=" "))
-  message(paste(length(excelFiles),"files in total"))
-  message(paste("csv files found, first 5 files:"))
+  #message(paste(length(excelFiles),"files in total"))
+  message(paste(length(csvFiles),"csv files found, first 5 files:"))
   message(paste(csvFiles[1:5],collaps=" "))
-  message(paste(length(csvFiles),"files in total"))
+  #message(paste(length(csvFiles),"files in total"))
   message("")
   TB <- txtProgressBar(min = 0, max = length(excelFiles)+length(csvFiles), style = 3, width = 50)
   if (length(excelFiles)>=1){
@@ -1195,20 +1195,21 @@ ChemstationLibraryEntry<-function(workdir=NULL,rootdir=dirname(workdir)){
     infile <- xlsx::read.xlsx(file=paste(chemStationFileLoc,excelFiles[i], sep = "/"), sheetName="LibRes", startRow=9)
     if (!is.null(infile)){
       if(libraryname==""){libraryname=as.character(infile[1,"Library"])}
+      libraryname=unique(c(libraryname,infile[,"Library"]))
       fileName <- gsub("", replacement="", x=excelFiles[i])
       
       #infile.reduced <- infile[,-c(1,3,8,13,14)]
-      infile.reduced <- infile[,-c(3,13)]
+      infile.reduced <- infile[,-c(3)]
       colnames(infile.reduced) <- c("Compound", "Retention.Time.min", "Peak.Area", "Baseline.Height",
                                     "Peak.Height", "Width", "Hit.No", "Name", "Library.Match.Quality",
-                                    "Mol.Weight.amu", "CAS.Number", "Entry.No.Lib")
+                                    "Mol.Weight.amu", "CAS.Number", "Library", "Entry.No.Lib")
       infile.reduced=infile.reduced[infile.reduced[["Entry.No.Lib"]]!="",]
       infile.reduced$FileName <- fileName
       
       infile.reduced <- infile.reduced[c("Compound", "Hit.No", "FileName", "CAS.Number", "Name",
                                          "Retention.Time.min", "Width", "Peak.Area",
                                          "Baseline.Height", "Peak.Height", "Library.Match.Quality",
-                                         "Mol.Weight.amu", "Entry.No.Lib")]
+                                         "Mol.Weight.amu", "Entry.No.Lib", "Library")]
       
       newMergedFile <- rbind(newMergedFile, infile.reduced)
     }
@@ -1235,22 +1236,23 @@ ChemstationLibraryEntry<-function(workdir=NULL,rootdir=dirname(workdir)){
     infile=na.omit(infile1)
     if('&'(ncol(infile)==14,colnames(infile)[1]=="CPD")){
       
-      
       if(libraryname==""){libraryname=as.character(infile[1,"Library"])}
+      libraryname=unique(c(libraryname,infile[,"Library"]))
       fileName <- gsub("", replacement="", x=csvFiles[i])
       
       #infile.reduced <- infile[,-c(1,3,8,13,14)]
-      infile.reduced <- data.frame(infile[,-c(3,12)],stringsAsFactors = F)
+      infile.reduced <- data.frame(infile[,-c(3)],stringsAsFactors = F)
       colnames(infile.reduced) <- c("Compound", "Retention.Time.min", "Peak.Area", "Baseline.Height",
                                     "Peak.Height", "Width", "Hit.No", "Library.Match.Quality",
-                                    "Mol.Weight.amu", "CAS.Number", "Entry.No.Lib", "Name")
+                                    "Mol.Weight.amu", "CAS.Number", "Library","Entry.No.Lib", "Name")
+      
       infile.reduced=infile.reduced[infile.reduced[,"Entry.No.Lib"]!="",]
       infile.reduced$FileName <- fileName
       
       infile.reduced <- infile.reduced[c("Compound", "Hit.No", "FileName", "CAS.Number", "Name",
                                          "Retention.Time.min", "Width", "Peak.Area",
                                          "Baseline.Height", "Peak.Height", "Library.Match.Quality",
-                                         "Mol.Weight.amu", "Entry.No.Lib")]
+                                         "Mol.Weight.amu", "Entry.No.Lib", "Library")]
       
       newMergedFile <- rbind(newMergedFile, infile.reduced)
     }
@@ -1264,19 +1266,25 @@ ChemstationLibraryEntry<-function(workdir=NULL,rootdir=dirname(workdir)){
   #newMergedFile$Name=as.character(windows_filename2(newMergedFile$Name))
   newData <- newMergedFile
 
-  mergedOutFile = paste0(rootdir,"/mergedFile.csv")
+  mergedOutFile = paste0(rootdir,"/merged_library_entries_File.csv")
   
   # remove "Compound" and "Hit.No"
   write.csv(newData[,-c(1,2)], mergedOutFile, row.names=FALSE, na="", quote=F)
   
   # write out "Entry.No.Lib" with duplicates removed in a separate file
-  unique.Entry.No <- unique(newData[,"Entry.No.Lib"])
+  #unique.Entry.No <- unique(newData[,"Entry.No.Lib"])
+  libraryname<<-libraryname
+  library_list<-unique(newData[,c("Entry.No.Lib", "Library")])
+  
+  for (libraryname in unique(library_list$Library)){
+  unique.Entry.No <- library_list[library_list$Library==libraryname,"Entry.No.Lib"]
+  #unique.Entry.No<-c(libraryname,unique.Entry.No)
   libraryname<-gsub("\\\\","/",libraryname)
   libraryname<-gsub(base::dirname(libraryname),"",libraryname)
   libraryname<-gsub("/","",libraryname)
   write.table(unique.Entry.No, paste0(rootdir,"/",libraryname,"_unique_Entry_no.txt"), row.names=FALSE, na="", quote=FALSE, sep="\t", col.names=FALSE)
-  
-  
+  }
+
   # mergedOutFile is the name of the new outfile
   #mergedOutFile = "mergedFile.txt"
   
@@ -1284,8 +1292,8 @@ ChemstationLibraryEntry<-function(workdir=NULL,rootdir=dirname(workdir)){
   #write.table(newMergedFile, mergedOutFile, sep="\t", row.names=FALSE, quote=FALSE)
   message("")
   message(paste("The Chemstation results are created and save in",rootdir, sep=" "))
-  
-  
+  message(paste("Library(ies) found in the ID results: ",unique(library_list$Library)))
+  message(paste("Done."))
 }
 
 
@@ -1326,6 +1334,15 @@ msp_to_msl<-function(mspfile=NULL){
   rez[,"Comment"]=comments.nms
   rez<-data.frame(rez,stringsAsFactors =F )
   rez[,"SOURCE"]=mspfile
+  test_col=testcolume(rez,c("Name","Comment","MW","RI","Formula","CASNO","SOURCE","Num.peaks"))
+  if (length(test_col$failcol)>0){
+    for (col in test_col$failcol){
+      
+      rez[[col]]=NA
+      
+    }
+  }
+  
   rez<-rez[,c("Name","Comment","MW","RI","Formula","CASNO","SOURCE","Num.peaks")]
   colnames(rez)<-c("NAME","COMMENT","MW","RI","FORM","CASNO","SOURCE","NUM PEAKS")
   
@@ -1389,7 +1406,91 @@ generateMSL_par<- function(i,rez,starts,stops,mspcontent){
   return(writeLinetmp)
 }
 
-MSP_generate_lib2nist<-function(unique_Entry_no="",lib2nistpath="E:/lib2nist",convert_MSPtoMSL=T){
+MSP_generate_lib2nist<-function(unique_Entry_no="",lib2nistpath="C:\\NIST17\\MSSEARCH",convert_MSPtoMSL=T){
+  library("tcltk")
+  if(lib2nistpath==""){ lib2nistpath=  tk_choose.dir(caption = "Select lib2nist directory") }
+  
+  if(unique_Entry_no==""){
+    unique_Entry_no=tcltk::tk_choose.files(default = "merged_library_entries_File.csv",
+                                           multi = F, caption = "Select the merged library entries file in csv format")
+  }
+  unique_Entry_no=gsub("\\\\","/",unique_Entry_no)
+  wdpath=unique(base::dirname(unique_Entry_no))
+  output_filename=gsub(pattern = paste0(wdpath,"/"),replacement = "",x=tools::file_path_sans_ext(unique_Entry_no))
+  
+  if (wdpath=="."){wdpath=getwd()}
+  
+  unique_Entry_no_name=gsub(paste0(wdpath,"/"),"",unique_Entry_no)
+  
+  newData<-read.csv(unique_Entry_no,stringsAsFactors = F)
+  library_list<-unique(newData[,c("Entry.No.Lib", "Library")])
+  
+  for (libraryname in unique(library_list$Library)){
+    message(libraryname)
+    unique.Entry.No <- library_list[library_list$Library==libraryname,"Entry.No.Lib"]
+    #unique.Entry.No<-c(libraryname,unique.Entry.No)
+    libraryname_org=libraryname
+    libraryname<-gsub("\\\\","/",libraryname)
+    libraryname<-gsub(base::dirname(libraryname),"",libraryname)
+    libraryname<-gsub("/","",libraryname)
+    writeLines(as.character(unique.Entry.No), paste0(wdpath,"/",libraryname,"_unique_Entry_no.txt"))
+    
+  #message(as.character(unique.Entry.No))
+  copyresult=file.copy(paste0(wdpath,"/",libraryname,"_unique_Entry_no.txt"), paste0(lib2nistpath,"/",libraryname,"_unique_Entry_no.txt"), overwrite = TRUE)
+  #unique_entries_lines<-readLines(unique_Entry_no[i])
+  
+  
+  writeini=NULL
+  writeini[1]="[Directory]"
+  writeini[2]="Input=" 
+  writeini[3]=paste0("Output=",gsub("/","\\\\",wdpath))
+  writeini[4]=paste0("NIST=",lib2nistpath)
+  writeini[5]="Type=0" 
+  writeini[6]="[Output]"  
+  writeini[7]="Text=1"
+  writeini[8]="TextFileType=0"  
+  writeini[9]="DB=0" 
+  writeini[10]="CalcMW=0"  
+  writeini[11]="IncludeSynonyms=0"
+  writeini[12]="KeepIDs=0" 
+  writeini[13]="LinkMOLfile=0" 
+  writeini[14]="MzAdd=0" 
+  writeini[15]="MzMpy=1" 
+  writeini[16]="NeedSubset=1"  
+  writeini[17]="MsmsOnly=0"  
+  writeini[18]="Msms2008-Compat=0"  
+  writeini[19]="[Subset]" 
+  writeini[20]="Type=1"  
+  writeini[21]="ForAll=1"  
+  writeini[22]="FromFile=1"  
+  writeini[23]=paste0("IdFile=",paste0(lib2nistpath,"/",libraryname,"_unique_Entry_no.txt"))
+  
+  writelineresult=writeLines(writeini,paste0(lib2nistpath,"/","Mylib.ini"))
+  
+  #writelineresult=writeLines(writeini,paste0(lib2nistpath,"/","Mylibb.ini"))
+  
+  
+  
+  
+  
+  #cmdline=paste0("cd /d ",gsub("/","\\\\",lib2nistpath),"&&",paste0("lib2nist /log3 Mylib.log Mylib.ini C:\\Database\\W11N17MAIN.L \"",gsub("/","\\\\",wdpath),"\" =Mylib"))
+  cmdline=paste0("cd /d \"",gsub("/","\\\\",lib2nistpath),"\"&&","lib2nist /log3 Mylib.log Mylib.ini ",libraryname_org, " \"",gsub("/","\\\\",wdpath),"\" =Mylib_",libraryname,".MSP")
+  message(cmdline)
+  shell(cmdline)
+  message("done")
+  #readini=readLines(paste0(lib2nistpath,"/","Mylib.ini"))
+  
+  if(convert_MSPtoMSL){
+    mspfile=paste0(gsub("/","\\\\",wdpath),"\\Mylib_",libraryname,".MSP")
+    msp_to_msl(mspfile=mspfile)
+  }
+    
+  }
+  
+  
+}
+
+MSP_generate_lib2nist_a<-function(unique_Entry_no="",lib2nistpath="C:/NIST17/MSSEARCH",convert_MSPtoMSL=T){
   library("tcltk")
   wdpath=base::dirname(unique_Entry_no)
   if(lib2nistpath==""){ lib2nistpath=  tk_choose.dir(caption = "Select lib2nist directory") }
@@ -1406,7 +1507,7 @@ MSP_generate_lib2nist<-function(unique_Entry_no="",lib2nistpath="E:/lib2nist",co
   writeini[1]="[Directory]"
   writeini[2]="Input=" 
   writeini[3]=paste0("Output=",gsub("/","\\\\",wdpath,"\\\\Mylibs",))
-  writeini[4]="NIST=C:\\NIST17\\MSSEARCH" 
+  writeini[4]=paste0("NIST=",lib2nistpath)
   writeini[5]="Type=0" 
   writeini[6]="[Output]"  
   writeini[7]="Text=1"

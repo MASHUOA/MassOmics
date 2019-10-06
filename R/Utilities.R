@@ -186,7 +186,7 @@ Combine_result_file<-function(path){
 
 data_test_rename<-function(required_col,df){
   
-  testcolumeresult = testcolume(df,required_col)
+  testcolumeresult = testcolume(df,testcolnames=required_col)
   
   if (length(testcolumeresult$failcol)>0){
     
@@ -256,7 +256,7 @@ testcolume<-function(df,testcolnames,match_exact=T){
       
     }else{
       
-      failcol=NULL
+      failcol=testfail
       
     }
     
@@ -268,7 +268,17 @@ testcolume<-function(df,testcolnames,match_exact=T){
     
   }
   
+  passcol=gsub("^\\^","",passcol)
+  passcol=gsub("\\$$","",passcol)
   
+  renamecol=gsub("^\\^","",renamecol)
+  renamecol=gsub("\\$$","",renamecol)
+  
+  failcol=gsub("^\\^","",failcol)
+  failcol=gsub("\\$$","",failcol)
+  
+  duplicatecol=gsub("^\\^","",duplicatecol)
+  duplicatecol=gsub("\\$$","",duplicatecol)
   
   return(list(passcol=passcol,renamecol=renamecol,failcol=failcol,duplicatecol=duplicatecol))
 }
