@@ -1284,7 +1284,7 @@ load_smpdb<-function(path="Z:\\George skyline results\\maldiimaging\\DB\\SMPdb.c
   
 }
 
-convert_PAPi<-function(metabolomicsData,localDatabase = "default",matchingscore=0.6,top_N=10){
+convert_PAPi<-function(metabolomicsData,localDatabase = "default",matchingscore=0.6,top_N=10,derivatisation=c("TMS","derivative","methyl","ester")){
   library(stringr)
   library(PAPi)
   library(stringdist)
@@ -1295,14 +1295,25 @@ convert_PAPi<-function(metabolomicsData,localDatabase = "default",matchingscore=
   if (missing(metabolomicsData)) metabolomicsData=read_table_generic(tk_choose.files(caption = "Select formatted data for KEGG code conversion"))
   
 
-  keggLibrary=read.csv(paste0(R.home(),"/library/PAPi/databases/default/COMPbase.csv"),stringsAsFactors = F)
+  keggLibrary=try(read.csv(paste0(R.home(),"/library/PAPi/databasesdefault/COMPbase.csv"),stringsAsFactors = F))
+  if (grep("Error",keggLibrary[1],ignore.case = T)==T){
+    keggLibrary=read_table_generic(tk_choose.files(caption = "Select COMPbase.csv for KEGG code conversion"))
+  }
   
-  metabolomicsData$trimedNames=gsub("\\(split peak .\\)","",metabolomicsData$Names)
+    metabolomicsData$trimedNames=metabolomicsData$Names
+  
+  for (derivate in derivatisation){
+    metabolomicsData$trimedNames=gsub(derivate,"",metabolomicsData$trimedNames,ignore.case = T)
+  }
+  
+  metabolomicsData$trimedNames=gsub("\\(split peak .\\)","",metabolomicsData$trimedNames)
+  metabolomicsData$trimedNames=gsub("\\(split peak ..\\)","",metabolomicsData$trimedNames)
   metabolomicsData$trimedNames=gsub("\\(peak .\\)","",metabolomicsData$trimedNames)
-  
-  metabolomicsData$trimedNames=gsub("methyl ester"," ",metabolomicsData$trimedNames)
-  metabolomicsData$trimedNames=gsub("methyl"," ",metabolomicsData$trimedNames)
-  metabolomicsData$trimedNames=gsub("Methyl"," ",metabolomicsData$trimedNames)
+  metabolomicsData$trimedNames=gsub("\\(peak ..\\)","",metabolomicsData$trimedNames)
+  #metabolomicsData$trimedNames=gsub("methyl ester"," ",metabolomicsData$trimedNames)
+  #metabolomicsData$trimedNames=gsub(" TMS derivative"," ",metabolomicsData$trimedNames)
+  #metabolomicsData$trimedNames=gsub("methyl"," ",metabolomicsData$trimedNames)
+  #metabolomicsData$trimedNames=gsub("Methyl"," ",metabolomicsData$trimedNames)
   metabolomicsData$trimedNames=gsub("-"," ",metabolomicsData$trimedNames)
   metabolomicsData$trimedNames=gsub(","," ",metabolomicsData$trimedNames)
   metabolomicsData$trimedNames=gsub(" {2,}"," ",metabolomicsData$trimedNames)
@@ -1310,13 +1321,13 @@ convert_PAPi<-function(metabolomicsData,localDatabase = "default",matchingscore=
   #metabolomicsData_Names=gsub("-"," ",metabolomicsData_Names)
   
   metabolomicsData_Names=metabolomicsData$trimedNames[2:length(metabolomicsData$trimedNames)]
-  keggLibraryentry=keggLibrary[,1]
+  keggLibraryentry=as.vector(keggLibrary[,1])
   metabolomicsData_Names=unique(metabolomicsData_Names)
   #stringsim(metabolomicsData_Names,keggLibraryentry)
   #keggLibraryentry_split=stringr::str_split(keggLibraryentry,"; ")
   
     keggLibraryentry_split_index=lapply(1:length(keggLibraryentry),function(x,keggLibraryentry){
-      keggLibraryentry_split_index_name=unlist(stringr::str_split(keggLibraryentry[[x]],"; ") )
+      keggLibraryentry_split_index_name=unlist(stringr::str_split(keggLibraryentry[x],"; ") )
       keggLibraryentry_split_index_index=length(keggLibraryentry_split_index_name)
       return(data.frame(Name=keggLibraryentry_split_index_name,index=base::rep(x,keggLibraryentry_split_index_index),stringsAsFactors = F))
     },keggLibraryentry) 
@@ -1324,7 +1335,7 @@ convert_PAPi<-function(metabolomicsData,localDatabase = "default",matchingscore=
     #a=as.matrix(a,nrow=2)
     #a=as.data.frame(t(as.matrix(a,nrow=2)),stringsAsFactors = F)
     
-    matchentry=(sapply(metabolomicsData_Names, stringsim,keggLibraryentry_split_index$Name))
+    matchentry=(sapply(sapply(metabolomicsData_Names, tolower), stringsim,sapply(keggLibraryentry_split_index$Name, tolower)))
     
   stringsim_list<-function(x,list,t){
     max(stringsim(t,list[[x]]))
@@ -1368,7 +1379,7 @@ convert_PAPi<-function(metabolomicsData,localDatabase = "default",matchingscore=
     name=metabolomicsData_Names[x]
     df=matchentry_topN[[x]]
     if (max(df$SimScore)>=matchingscore){
-    return(data.frame(origin=name,covert=df[head(which(df$SimScore==max(df$SimScore)),1),1],stringsAsFactors = F))
+    return(data.frame(origin=name,covert=df[head(which(df$SimScore==max(df$SimScore)),1),2],stringsAsFactors = F))
     }else{
     return(data.frame(origin=name,covert="Not_found",stringsAsFactors = F))
     }
@@ -1389,7 +1400,8 @@ convert_PAPi<-function(metabolomicsData,localDatabase = "default",matchingscore=
   papiData=rbind(papiData[grepl("Replicates",papiData$Names,ignore.case = T),],papiData[!grepl("Replicates",papiData$Names,ignore.case = T),])
   papiData$Keggcode[1]="Replicates"	
   colnames(papiData)[1]="Name"
-  papiData$Name=gsub("^cpd:","",papiData$Name)
+  papiData$Name=gsub("^cpd:","",unlist(unname(papiData$Name)))
+  #sapply(papiData$Name,gsub,)
   rownames(papiData)=1:nrow(papiData)
   papiData$trimedNames=NULL
   papiData$Names=NULL
@@ -1417,21 +1429,22 @@ library(PAPi)
 standardcond=unique(as.character(papiData[1,]))
 
 if (sum(grepl("qc",standardcond,ignore.case = T))>=1) {Ref.cond=standardcond[grepl("qc",standardcond,ignore.case = T)]
-}else {Ref.cond=standardcond[1]}
+}else {Ref.cond=standardcond[23]}
   
   
 
 workdir=getwd()
 if (dir.exists(paste(workdir,"/Pathway",sep=""))==FALSE){dir.create(paste(workdir,"/Pathway",sep=""))}
-
-png("Pathway/PAPi_graph.png",width = 1600,height = 900)
+plot_papiResults=cbind(papiResults[,1],papiResults[,(papiResults[1,] %in% c("C","IC","OC"))])
+plot_papiResults=plot_papiResults[plot_papiResults$C1!=0,]
+png(paste0("Pathway/PAPi_graph_",Ref.cond,".png"),width = 1600,height = 900)
 papiLine(
-   papiResults,
-   relative = TRUE,
-   setRef.cond = TRUE,
-   Ref.cond = Ref.cond,
-   save = FALSE
+  plot_papiResults,
+   relative = TRUE,setRef.cond = T, Ref.cond=Ref.cond,
+   save = FALSE,
+  yscale=c(-5,3)
    )
+
 dev.off()
 write.csv(papiResults,"Pathway/papiResults.csv",row.names = F)
 message(paste("Result data have been saved to",paste(workdir,"/Pathway",sep="")))
@@ -1449,14 +1462,18 @@ PAPi_formatting<-function(selectfile,
   rootdir=dirname(selectfile)
   fileName=gsub(paste0(rootdir,"/"),"",selectfile)
   file<-read_table_generic(selectfile)
+  file<-as.data.frame(file)
+  #file<-openxlsx::read.xlsx(selectfile)
   infofile<-read_table_generic(selectinfofile)
   file<-data_test_rename(c("CAS","Name"),file)
   infofile<-data_test_rename(c("Name","Condition"),infofile)
   condition<-colnames(file) %in% infofile$Name
-   file<-data.frame(file,stringsAsFactors = F)
+   #file<-data.frame(file,stringsAsFactors = F)
+  #infofile$Name[sort(order(infofile$Name)[which(condition)])]
+   existfile<-infofile$Name %in% colnames(file)
+    newfile<-file[,infofile$Name[existfile]]
    
-   newfile<-file[,c(which(condition))]
-   newfile<-cbind(as.character(file[,"Name"]),newfile)
+   newfile<-cbind((file[,"Name"]),newfile)
    colnames(newfile)[1]="Names"
    conditionnames<-matrix(nrow=length(which(condition)),ncol = 2)
    i=1
@@ -1467,7 +1484,7 @@ PAPi_formatting<-function(selectfile,
    }
    newfile$Names=as.character(newfile$Names)
    #conditionnames<-infofile$Condition[infofile$Name==colnames(file)]
-   newfile1<-rbind(as.character(c("Replicates",conditionnames[,2])),newfile)
+   newfile1<-rbind(as.character(c("Replicates",infofile$Condition[existfile])),newfile)
    if (output){
      write.csv(newfile1,paste0(rootdir,"\\KEGG_formated_",fileName),row.names = F)
    }

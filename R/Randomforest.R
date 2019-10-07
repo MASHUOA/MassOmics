@@ -145,11 +145,11 @@ readData_serrf_native = function(path =  "G:\\data\\D\\data project D.xlsx",info
   #check if it is csv of xlsx
   message("MassOmics native Data loading for SERRF")
   if(grepl(".xlsx", path)){
-    d <- openxlsx::read.xlsx(path, sheet = 1,colNames = FALSE)
+    d <- openxlsx::read.xlsx(path, sheet = 1)
   }else if(grepl(".xls", path)){
-    d <- openxlsx::read.xlsx(path, sheet = 1,colNames = FALSE)
+    d <- openxlsx::read.xlsx(path, sheet = 1)
   }else if(grepl(".xlsm", path)){
-    d <- openxlsx::read.xlsx(path, sheet = 1,colNames = FALSE)
+    d <- openxlsx::read.xlsx(path, sheet = 1)
   }else if(grepl(".csv", path)){
     # file = "C:\\Users\\Sili Fan\\Downloads\\val (18).csv"
     d <- data.table::fread(path)
