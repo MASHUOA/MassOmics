@@ -1296,7 +1296,7 @@ convert_PAPi<-function(metabolomicsData,localDatabase = "default",matchingscore=
   
 
   keggLibrary=try(read.csv(paste0(R.home(),"/library/PAPi/databasesdefault/COMPbase.csv"),stringsAsFactors = F))
-  if (grep("Error",keggLibrary[1],ignore.case = T)==T){
+  if (length(grep("Error",keggLibrary,ignore.case = T))>=1){
     keggLibrary=read_table_generic(tk_choose.files(caption = "Select COMPbase.csv for KEGG code conversion"))
   }
   
@@ -1429,7 +1429,7 @@ library(PAPi)
 standardcond=unique(as.character(papiData[1,]))
 
 if (sum(grepl("qc",standardcond,ignore.case = T))>=1) {Ref.cond=standardcond[grepl("qc",standardcond,ignore.case = T)]
-}else {Ref.cond=standardcond[23]}
+}else {Ref.cond=standardcond[3]}
   
   
 

@@ -838,6 +838,516 @@ amdis_id_Summary<-function(workdir= NULL,
   }
 }
 
+#' MassHunter report file parsing and summary
+#'
+#' This is a function to process the AMDIS_report.txt file. specify a in-house library or a subset of NIST library to find the most intense quantification ion within the GC-MS experiment m/z range. The script will invoke selection windows to let the user specify the files location.  
+#'
+#' @param workdir locate the working Dir
+#' @param MS.L specify the library file
+#' @param MsLibrary specify the library file origin, could be "NIST" or "InHouse"
+#' @param amdis.report specify the identification report file
+#' @param Ret.Time.Filter set the retetion time filter window around the expected retention time (in +/-min).
+#' @param RT.shift.limt set a threshole in seconds to define a molecule have 
+#' @param mz_L lower mz limit for quantification ion selection
+#' @param mz_U upper mz limit for quantification ion selection
+#' @param generate_rt_shift_graph Set TRUE to generate the retetion time shift plots for each molecules that have retention time discrepencies greater than the \code{"RT.shift.limt"}
+#' @param RTcorrection Set TRUE to enable a retention time correction before multiple peaks resolving
+#' @return None
+#'
+#' @examples
+#' amdis_id_Summary()
+#'
+#' @export
+MassHunter_id_Summary<-function(workdir= NULL,
+                           MS.L= NULL,
+                           amdis.report = NULL,
+                           File.name = "Summary Report.csv",
+                           MsLibrary=c("NIST", "InHouse"),
+                           Ret.Time.Filter=2.5,
+                           RT.shift.limt = 60,
+                           mz_L=38,
+                           mz_U=550,
+                           generate_rt_shift_graph=F,
+                           generate_rt_shift_graphs=F,
+                           RTcorrection=T
+){
+  library("tcltk")
+  library("tcltk2")
+  # require("Metab")
+  library("pander")
+  library("parallel")
+  #library("OneR")
+  library("dplyr")
+  library("ggplot2")
+  library("ggpubr")
+  library(reticulate)
+  import("os")
+  (source_python("masshunter-massOmics-summary-report.py"))
+  #workdir <- workdir
+  if (is.null(workdir)){workdir= tk_choose.dir(caption = "Select working directory")}
+  
+  if (is.null(amdis.report)){amdis.report = tk_choose.files(default = "Select the AMDIS report in .TXT",
+                                                            multi = FALSE, caption = "Select the AMDIS report in .TXT",
+                                                            filter=matrix(c("Text", ".txt", "All files", "*"),2, 2, byrow = TRUE))}
+  
+  if (is.null(MS.L)){MS.L= tk_choose.files(caption="Select MS library (e.g. SVB_total or NIST) in .msl",
+                                           filter=matrix(c("MSL", ".msl", "All files", "*"),2, 2, byrow = TRUE))}
+  setwd(workdir)
+  amdis.report = data.table::fread(amdis.report,sep = "\t", stringsAsFactors=FALSE)
+  message("amdis_id_Summary parameters")
+  message(paste("RT filter: ", Ret.Time.Filter, " min", sep=""))
+  message(paste("Detect mutiple peaks when RT range is greater than: ", RT.shift.limt, " s", sep=""))
+  message(paste("Quant mass will be selected within: ", mz_L, "-", mz_U,sep=""))
+  message(paste("Perform RT correction before multi-peak resolving: ",RTcorrection ,sep=""))
+  # Extract Reference ion, CAS # from MS library
+  lib.txt<-readLines(MS.L)
+  lib.txt1<-lib.txt[-grep("^[ ]*$",lib.txt)]
+  att.nms<-unique(sapply(strsplit(lib.txt1[grep(":",lib.txt1)],":"),function(x) x[1]))
+  entry.nms<-sapply(strsplit(lib.txt1[grep("NAME:",lib.txt1)],"ME:"), function(x) x[2])
+  rez<-matrix(NA, nrow=length(entry.nms), ncol=length(att.nms), dimnames=list(NULL,att.nms ))
+  starts<-grep("NAME:", lib.txt)
+  stops<-c(starts[1:(length(starts)-1)]+diff(starts)-1,length(lib.txt))
+  for (i in 1:length(starts)){
+    tmp<-lib.txt[starts[i]:stops[i]]
+    sapply(strsplit(tmp[grep(":",tmp)],":"), function(x) rez[i,x[1]]<<-x[2])
+  }
+  
+  # ExtractIon for NIST library
+  if(MsLibrary=="NIST"){
+    message("Running in NIST mode, will generate Ref ions for each metabolites within mz detection range")
+    substrRight <- function(x, n){
+      substr(x, nchar(x)-n+1, nchar(x))
+    }
+    reference_ion<-NULL
+    
+    #test<-buildLib(AmdisLib=MS.L, folder=workdir, save = F, output = "ion_lib.csv", verbose = F,mz_L = mz_L,mz_U = mz_U)
+    
+    
+    #reference_ion=parLapply(cl=autoStopCluster(makeCluster(detectCores()-1)), 1:length(starts),parse_msl_par,lib.txt,starts,stops,mz_L,mz_U)
+    
+    #reference_ion=unlist(reference_ion)
+    
+    #sapply(strsplit(tmp[grep(":",tmp)],":"), function(x) rez[i,x[1]]<<-x[2])
+    reference_ion=0
+    
+    rez<-data.frame(rez,stringsAsFactors=FALSE)
+    rez$NAME<-entry.nms
+    libr<-cbind(rez,reference_ion)## returns list of peaks
+    libr$NAME <- gsub("?", "", libr$NAME, fixed = TRUE)
+    libr$NAME <- gsub("^ ", "", libr$NAME, perl=T)
+    libr$NAME <- gsub("^ ", "", libr$NAME, perl=T)
+    libr$NAME <- gsub("[*:%^!;$]", "", libr$NAME, perl=T)
+    
+    # Generate Summary report
+    AMDIS.report <-amdis.report
+    AMDIS.report$Name <- gsub("?", "", AMDIS.report$Name, fixed = TRUE)
+    AMDIS.report$Name <- gsub("^ ", "", AMDIS.report$Name, perl=T)
+    AMDIS.report$Name <- gsub("[*:%^!*?&;$]", "", AMDIS.report$Name, perl=T)
+    AMDIS.report$Width <- gsub(">", "",  AMDIS.report$Width, perl=T)
+    AMDIS.report$Width <- as.numeric(gsub("scans", "",  AMDIS.report$Width, perl=T))
+    #AMDIS.reportcas<-AMDIS.report[AMDIS.report$CAS %in% libr$CASNO,]
+    AMDIS.report<-AMDIS.report[AMDIS.report$Name %in% gsub("^ ","",libr$NAME),]
+    #AMDIS.report1<-AMDIS.report[AMDIS.report$Name %in% libr$NAME,]
+    #
+    
+    if (RTcorrection){
+      library(ggpubr)
+      RT.correction.grid<-RT_correction_xcms()
+      RT.correction.result<-RT_correction(df=AMDIS.report)
+      AMDIS.report<-RT.correction.result[[1]]
+      ggpubr::ggarrange(RT.correction.result[[2]],RT.correction.result[[3]],
+                        labels = c("Before","After"),common.legend = T,
+                        ncol = 2, nrow =1,vjust=1.5) %>%  ggexport(filename = paste(getwd(),"/retention time correction.png",sep=""),width = 1800, height = 900,verbose = NULL,res = 100)
+      
+    }
+    Metabolite.list <-split(AMDIS.report$RT, AMDIS.report$Name)
+    RT.stats<-t(sapply(Metabolite.list,function(x) c(RT.median=round(median(x,na.rm=TRUE),3),
+                                                     RT.shift=round((median(x,na.rm=TRUE)-(quantile(x, prob = 0.25,na.rm=TRUE)-IQR(x,na.rm=TRUE)*1.5))*60,2),
+                                                     RT.shift=round(((quantile(x, prob = 0.75,na.rm=TRUE)+IQR(x,na.rm=TRUE)*1.5)-median(x,na.rm=TRUE))*60,2)
+    )))
+    colnames(RT.stats)<-c("RT.median","RT.shfit.Lower", "RT.shfit.upper")
+    RT.stats=RT.stats[is.na(RT.stats[,"RT.median"])!=T,]
+    Peak.width <- sapply(split(AMDIS.report$Width, AMDIS.report$Name), function(x) median(x))
+    
+    
+    ID.stats<-t(sapply(split(AMDIS.report$Weighted, AMDIS.report$Name),function(x) c(Library.match=round(mean(x,na.rm=T)),
+                                                                                     Total.ID=length(x[!is.na(x)]))))
+    #message("Running in NIST mode, will generate Ref ions for each metabolites within mz detection range")
+    AMDIS.report.RT.stats <- data.frame(cbind(Name=0,Ref.ion=0, ID.stats, RT.stats, Peak.width, CAS=0))
+    #message(paste(AMDIS.report.RT.stats$Ref.ion[1:40],sep="\n"))
+    #AMDIS.report.RT.stats$Ref.ion <-  libr$reference_ion[match(strtrim(rownames(RT.stats),70),strtrim(libr$NAME,70))]
+    #matchID=match(rownames(RT.stats),libr$NAME)
+    matchID=match(strtrim(rownames(RT.stats),170),strtrim(libr$NAME,170))
+    #AMDIS.report.RT.stats=AMDIS.report.RT.stats[which(!is.na(matchID)),]
+    #matchID70=match(strtrim(rownames(RT.stats),70),strtrim(libr$NAME,70))
+    #intersect(matchID,matchID70)
+    AMDIS.report.RT.stats$Ref.ion <-  unlist(parallel::parLapply(cl=autoStopCluster(makeCluster(detectCores()-1)), 
+                                                                 matchID,
+                                                                 parse_msl_par,lib.txt,starts,stops,mz_L,mz_U))
+    
+    #for (ids in matchID){
+    # Ref.iontest= parse_msl_par(ids,lib.txt,starts,stops,mz_L,mz_U)
+    
+    #}
+    #match("2-Cyclopropylethynylcyclopropane",libr$NAME)
+    #message(AMDIS.report.RT.stats$Ref.ion)
+    #which(match(rownames(RT.stats),libr$NAME)==NA)
+    AMDIS.report.RT.stats$CAS <-  libr$CAS[match(strtrim(rownames(RT.stats),70),strtrim(libr$NAME,70))]
+    AMDIS.report.RT.stats$Name <- rownames(RT.stats)
+    
+    #total.n<-length(unique(AMDIS.report$FileName))
+    #ID_name<-paste("Total.ID(n=",total.n,")",sep="" )
+    #names(AMDIS.report.RT.stats)[3]<-ID_name
+    
+    
+    ## Remove point outside the range
+    RT.list<-lapply(Metabolite.list,function(x) c(RT.shift=(quantile(x, prob = 0.25,na.rm=TRUE)-IQR(x,na.rm=TRUE)*1.5),
+                                                  RT.shift=(quantile(x, prob = 0.75,na.rm=TRUE)+IQR(x,na.rm=TRUE)*1.5)))
+    Remove.outlier<-function(x,y){
+      x[x >= y[1]]
+      x[x <= y[2]]
+    }
+    
+    Remove.metabolite <-mapply(Remove.outlier, Metabolite.list, RT.list )
+    
+    # Plot all retention time of all metabolites
+    
+    n.total <- length(Metabolite.list)
+    png(paste(getwd(),"/retention time of all metabolites.png",sep=""),width = 30,height = 30, bg = "white",units = "in",res = 150)
+    par(mar=c(5,10,5,5))
+    boxplot(Metabolite.list, xlab= "Retention time (min)", cex.axis=0.2,  horizontal = TRUE, las=2, xaxt="n", main = paste("Retention time distribution of all metabolites ","(n=",n.total,")",sep=""))
+    axis(1,cex.axis=1,las=1)
+    dev.off()
+    
+    
+    ## solve multimodel issue
+    
+    
+    
+    AMDIS.report.split<-NULL
+    deletenamelist<-NULL
+    save.folder<-paste("RTshift_warnings_",RT.shift.limt,"s_","shift",sep="")
+    if (dir.exists(save.folder)!=T) try(dir.create (save.folder))
+    
+    for (component in 1:length(Remove.metabolite)){
+      if(and((RT.stats[component,2] + RT.stats[component,3]) > RT.shift.limt, T)){
+        #names(Remove.metabolite)[component]
+        RT_libsimilarity=NULL
+        #plot figure
+        names.var<- windows_filename(names(Remove.metabolite)[component])
+        RT_libsimilarity<-AMDIS.report[AMDIS.report$Name==names(Remove.metabolite)[component],]
+        #nbins=6
+        #res <- try(RT_libsimilarity$peakgroup<-OneR::bin(RT_libsimilarity$RT,nbins = nbins,labels = c(paste("Peak",1:nbins)), method = "clusters",na.omit = T),silent = TRUE)
+        #if (class(res) != "try-error"){
+        #while(and(sum(grep("Peak",RT_libsimilarity$peakgroup))==0,nbins>=1)){
+        #  nbins=nbins-1
+        #  res <- try(RT_libsimilarity$peakgroup<-OneR::bin(RT_libsimilarity$RT,nbins = nbins,labels = c(paste("Peak",1:nbins)), method = "clusters",na.omit = T),silent = TRUE)
+        #}
+        #RT_libsimilarity$peakgroup_RT_median=RT_libsimilarity$RT
+        #if (sum(grep("Peak",RT_libsimilarity$peakgroup))!=0){
+        #  RT_libsimilarity$peakgroup_RT_median=NULL
+        #  RT_libsimilarity.stats<-RT_libsimilarity %>% group_by(peakgroup) %>% summarise(peakgroup_RT_median = median(RT))
+        # RT_libsimilarity=merge(RT_libsimilarity,RT_libsimilarity.stats)
+        
+        # }
+        #RT_libsimilarity<-AMDIS.report[AMDIS.report$Name==names(Remove.metabolite)[component],]
+        #RT_libsimilarity$peakgroupRT=median(RT_libsimilarity$peakgroup)
+        #RT_libsimilarity$series=1:nrow(RT_libsimilarity)
+        #try(RT_libsimilarity<-RT_libsimilarity[order(RT_libsimilarity$FileName),])
+        
+        #estimate number of model
+        m.var <- data.frame(Remove.metabolite[component])[,1]
+        metabolite.name<-names(Remove.metabolite[component])
+        res=NULL
+        res <- try(density.all <- density(m.var, bw = "SJ"))
+        if(class(res)=="try-error"){density.all <- density.default(m.var)}
+        density.var <- density.all$y
+        density.x <-  density.all$x[density.var>0.01]
+        density.var <-  density.var[density.var>0.01]
+        
+        modes <- NULL
+        centre.p <- NULL
+        for ( i in 2:(length(density.var)-1) ){
+          if ( (density.var[i] > density.var[i-1]) & (density.var[i] > density.var[i+1]) ) {
+            modes <- c(modes,i)
+          }
+          if ( (density.var[i] < density.var[i-1]) & (density.var[i] < density.var[i+1]) ) {
+            centre.p <- c(centre.p,i)
+          }
+        }
+        
+        new.median<- density.x[modes]
+        new.boundary<- density.x [centre.p]
+        npeaks <-length(new.median)
+        
+        if(npeaks>1){
+          
+          vComposti <- vector("list", npeaks)
+          m.var.sub <- m.var
+          
+          for (i in 1:(npeaks-1)){
+            vComposti[i] <-list(m.var.sub [m.var.sub <new.boundary[i]])
+            m.var.sub[m.var.sub<new.boundary[i]]<-NA
+          }
+          
+          vComposti[npeaks] <- list(m.var.sub)
+          
+          RT.add.stats <- t(sapply(vComposti,function(x) c(Total.ID=length(x[!is.na(x)]),
+                                                           RT.median=round(median(x,na.rm=TRUE),3),
+                                                           RT.shift=round((median(x,na.rm=TRUE)-(quantile(x, prob = 0.25,na.rm=TRUE)-IQR(x,na.rm=TRUE)*3))*60,2),
+                                                           RT.shift=round(((quantile(x, prob = 0.75, na.rm=TRUE)+IQR(x,na.rm=TRUE)*3)-median(x,na.rm=TRUE))*60,2))))
+          
+          colnames(RT.add.stats)<-c("Total.ID","RT.median","RT.shfit.Lower", "RT.shfit.upper")
+          AMDIS.report.RT.stats.add <- AMDIS.report.RT.stats[rownames(AMDIS.report.RT.stats)==metabolite.name,]
+          AMDIS.report.RT.stats.add <- cbind(AMDIS.report.RT.stats.add[,1:3] ,RT.add.stats, AMDIS.report.RT.stats.add[,8:9], row.names = NULL)
+          
+          # re-name
+          for (i in 1:npeaks){
+            AMDIS.report.RT.stats.add$Name[i] <- paste(metabolite.name, " (split peak ", i, ")", sep="")
+          }
+          AMDIS.report.split <- rbind(AMDIS.report.split, AMDIS.report.RT.stats.add)
+          deletenamelist<-c(deletenamelist,metabolite.name)
+          
+        }          
+        if (generate_rt_shift_graph){          
+          #png(filename=paste(save.folder,"/",names.var,".png",sep=""),width = 480,height = 720,)
+          #par(mfrow = c(2, 1))
+          #png(filename=paste(save.folder,"/",names.var,"lib_score.png",sep=""),width = 900,height = 1200)
+          #par(mfrow = c(2, 3))
+          #RT_libsimilarity<-AMDIS.report[AMDIS.report$Name==names(Remove.metabolite)[i],]
+          #RT_libsimilarity$peakgroup="Outliner"
+          #RT_libsimilarity$peakgroup_RT_median=RT_libsimilarity$RT
+          
+          names.var<- windows_filename(names(Remove.metabolite)[component])          
+          
+          
+          #boxplotlibsim=as_ggplot(boxplot(Weighted~peakgroup,data=RT_libsimilarity, main=names(Remove.metabolite)[i], xlab="Retention time (min)", ylab="Library Score"))
+          
+          #rtdensityplot=plot(data.frame(Remove.metabolite[i])[,1],1:length(data.frame(Remove.metabolite[i])[,1]),  ylab = "Density",xlab= "Retention time (min)", main = names(Remove.metabolite)[i], lwd=1.5)
+          #dev.off()
+          #plot figure
+          
+          png(filename=paste(save.folder,"/",names.var,".png",sep=""))
+          #png(filename=paste(save.folder,"/","aaa",".png",sep=""))
+          
+          plot(RT_libsimilarity$RT,RT_libsimilarity$Net,  ylab = "Net score",
+               xlab= "Retention time (min)", main = names(Remove.metabolite)[component], lwd=1.5)
+          dev.off()
+          
+          
+          #png(filename=paste(save.folder,"/",names.var,"_lib_score.png",sep=""),width = 400, height = 400)
+          
+          
+        }
+        if (generate_rt_shift_graphs){          
+          #png(filename=paste(save.folder,"/",names.var,".png",sep=""),width = 480,height = 720,)
+          #par(mfrow = c(2, 1))
+          #png(filename=paste(save.folder,"/",names.var,"lib_score.png",sep=""),width = 900,height = 1200)
+          #par(mfrow = c(2, 3))
+          #RT_libsimilarity<-AMDIS.report[AMDIS.report$Name==names(Remove.metabolite)[i],]
+          RT_libsimilarity$peakgroup="Outliner"
+          RT_libsimilarity$peakgroup_RT_median=RT_libsimilarity$RT
+          for (peak in 1: nrow(AMDIS.report.RT.stats.add)){
+            RT_libsimilarity$peakgroup=ifelse(and(RT_libsimilarity$RT>=(AMDIS.report.RT.stats.add$RT.median[peak]-AMDIS.report.RT.stats.add$RT.shfit.Lower[peak]/60),
+                                                  RT_libsimilarity$RT<=(AMDIS.report.RT.stats.add$RT.median[peak]+AMDIS.report.RT.stats.add$RT.shfit.upper[peak]/60)),paste("Peak",peak),RT_libsimilarity$peakgroup)
+            RT_libsimilarity$peakgroup_RT_median=ifelse(and(RT_libsimilarity$RT>=(AMDIS.report.RT.stats.add$RT.median[peak]-AMDIS.report.RT.stats.add$RT.shfit.Lower[peak]/60),
+                                                            RT_libsimilarity$RT<=(AMDIS.report.RT.stats.add$RT.median[peak]+AMDIS.report.RT.stats.add$RT.shfit.upper[peak]/60)),AMDIS.report.RT.stats.add$RT.median[peak],"")
+          }
+          names.var<- windows_filename(names(Remove.metabolite)[component])          
+          boxplotlibsim <- ggplot(RT_libsimilarity, aes(x=peakgroup, y=Net, fill=peakgroup)) + 
+            geom_boxplot() +  geom_jitter(shape=16, position=position_jitter(0.2)) + theme(
+              panel.background = element_rect(fill = "white"),
+              plot.margin = ggplot2::margin(1, 1, 1, 1, "cm"),
+              plot.background = element_rect(
+                fill = "grey90",
+                colour = "black"
+              ))
+          
+          #boxplotlibsim=as_ggplot(boxplot(Weighted~peakgroup,data=RT_libsimilarity, main=names(Remove.metabolite)[i], xlab="Retention time (min)", ylab="Library Score"))
+          
+          #rtdensityplot=plot(data.frame(Remove.metabolite[i])[,1],1:length(data.frame(Remove.metabolite[i])[,1]),  ylab = "Density",xlab= "Retention time (min)", main = names(Remove.metabolite)[i], lwd=1.5)
+          #dev.off()
+          
+          
+          #png(filename=paste(save.folder,"/","aaa",".png",sep=""))
+          
+          Net.plot=ggplot(RT_libsimilarity, aes(x=RT, y=Net, color=peakgroup,size=2)) + geom_point() + theme(
+            panel.background = element_rect(fill = "white"),
+            plot.margin = ggplot2::margin(1, 1, 1, 1, "cm"),
+            plot.background = element_rect(
+              fill = "grey90",
+              colour = "black"
+            ))
+          
+          ggpubr::ggarrange(boxplotlibsim,Net.plot,
+                            labels = c("boxplot","Net score"),
+                            ncol = 2, nrow =1,vjust=1.5) %>%  ggexport(filename = paste(save.folder,"/",names.var,"_lib_score.png",sep=""),width = 900, height = 400,verbose = NULL)
+          #dev.off()
+        }
+      }
+    }
+    
+    if(is.null(AMDIS.report.split)!=TRUE){
+      
+      deletenamelist=unique(deletenamelist)
+      
+      AMDIS.report.RT.statscombine<-AMDIS.report.RT.stats[!(AMDIS.report.RT.stats$Name %in% (deletenamelist)),]
+      
+      AMDIS.report.split=unique(AMDIS.report.split)
+      
+      AMDIS.report.RT.stats <- rbind(AMDIS.report.RT.statscombine, AMDIS.report.split)
+    }
+    
+    AMDIS.report.RT.stats <- AMDIS.report.RT.stats[order(AMDIS.report.RT.stats$RT.median, decreasing = FALSE),]
+    File.nameNIST <- "Summary report_NIST.csv"
+    write.csv(AMDIS.report.RT.stats, file = File.nameNIST,row.names = FALSE)
+    write.csv(libr, file = "Library summary.csv",row.names = FALSE)
+    
+    
+    
+    
+    message(paste("Summary report_NIST.csv was created and save in",workdir, sep=" "))
+  } else if (MsLibrary=="InHouse") {
+    
+    rez<-data.frame(rez,stringsAsFactors=FALSE)
+    rez$NAME<-entry.nms
+    libr<-rez## returns list of peaks
+    
+    # Generate summary report
+    AMDIS.report<-amdis.report
+    AMDIS.report<-AMDIS.report[AMDIS.report$RT-AMDIS.report$Expec..RT < Ret.Time.Filter,]
+    AMDIS.report<-AMDIS.report[AMDIS.report$RT-AMDIS.report$Expec..RT > -Ret.Time.Filter,]
+    AMDIS.report$Name <- gsub("?", "", AMDIS.report$Name, fixed = TRUE)
+    AMDIS.report$Name <- gsub("^ ", "", AMDIS.report$Name, perl=T)
+    AMDIS.report$Name <- gsub("[*:%^!*?&;$]", "", AMDIS.report$Name, perl=T)
+    AMDIS.report$Width <- gsub(">", "",  AMDIS.report$Width, perl=T)
+    AMDIS.report$Width <- as.numeric(gsub("scans", "",  AMDIS.report$Width, perl=T))
+    
+    
+    
+    Metabolite.list <-split(AMDIS.report$RT, AMDIS.report$Name)
+    
+    RT.stats<-t(sapply(Metabolite.list,function(x) c(RT.median=round(median(x,na.rm=TRUE),3),
+                                                     RT.shift=round((median(x,na.rm=TRUE)-(quantile(x, prob = 0.25)-IQR(x,na.rm=TRUE)*1.5))*60,2),
+                                                     RT.shift=round(((quantile(x, prob = 0.75)+IQR(x,na.rm=TRUE)*1.5)-median(x,na.rm=TRUE))*60,2))))
+    colnames(RT.stats)<-c("RT.median","RT.shfit.Lower", "RT.shfit.upper")
+    
+    Peak.width <- sapply(split(AMDIS.report$Width, AMDIS.report$Name), function(x) median(x))
+    
+    
+    RT.stats[is.na(RT.stats)]<-0
+    ID.stats<-t(sapply(split(AMDIS.report$Weighted, AMDIS.report$Name),function(x) c(Library.match=round(mean(x,na.rm=T)),
+                                                                                     Total.ID=length(x[!is.na(x)]))))
+    AMDIS.report.RT.stats<-NULL
+    AMDIS.report.RT.stats <- as.data.frame(cbind(Name=0,Ref.ion=0,ID.stats,RT.stats,Expec.RT=0,Diff.RT=0, Peak.width, CAS=0))
+    AMDIS.report.RT.stats$Ref.ion <- libr$RSN[match(rownames(RT.stats),libr$NAME)]
+    AMDIS.report.RT.stats$Expec.RT <- round(as.numeric(libr$RT[match(rownames(RT.stats),libr$NAME)]),2)
+    AMDIS.report.RT.stats$CAS <- libr$CASNO[match(rownames(RT.stats),libr$NAME)]
+    AMDIS.report.RT.stats$Diff.RT <- AMDIS.report.RT.stats$Expec.RT- as.numeric(AMDIS.report.RT.stats$RT.median)
+    AMDIS.report.RT.stats$Name <- rownames(RT.stats)
+    
+    
+    
+    
+    
+    ## Remove point outside the range
+    RT.list<-lapply(Metabolite.list,function(x) c(RT.shift=(quantile(x, prob = 0.25)-IQR(x,na.rm=TRUE)*1.5),
+                                                  RT.shift=(quantile(x, prob = 0.75)+IQR(x,na.rm=TRUE)*1.5)))
+    Remove.outlier<-function(x,y){
+      x[x >= y[1]]
+      x[x <= y[2]]
+    }
+    
+    Remove.metabolite <-mapply(Remove.outlier, Metabolite.list, RT.list )
+    
+    # Plot all retention time of all metabolites
+    n.total <- length(Metabolite.list)
+    par(mar=c(5,10,5,5))
+    boxplot(Metabolite.list, xlab= "Retention time (min)", cex.axis=0.5,  horizontal = TRUE, las=2, xaxt="n", main = paste("Retention time distribution of all metabolites ","(n=",n.total,")",sep=""))
+    axis(1,cex.axis=1,las=1)
+    
+    
+    ## solve multimodel issue
+    AMDIS.report.split<-NULL
+    
+    save.folder<-paste("RTshift_warnings_",RT.shift.limt,"s_","shift",sep="")
+    if (dir.exists(save.folder)!=T) try(dir.create (save.folder))
+    for (i in 1:length(Remove.metabolite)){
+      if(RT.stats[i,2] + RT.stats[i,3] > RT.shift.limt ){
+        
+        # plot figure
+        names.var<- gsub("/", "", names(Remove.metabolite)[i], perl=T)
+        png(filename=paste(save.folder,"/",names.var,".png",sep=""))
+        plot(data.frame(Remove.metabolite[i])[,1],1:length(data.frame(Remove.metabolite[i])[,1]),  ylab = "Density",
+             xlab= "Retention time (min)", main = names(Remove.metabolite)[i],lwd=1.5)
+        dev.off()
+        
+        #estimate number of model
+        m.var <- data.frame(Remove.metabolite[i])[,1]
+        metabolite.name<-names(Remove.metabolite[i])
+        
+        density.all <- density(m.var, bw = "SJ")
+        density.var <- density(m.var, bw = "SJ")$y
+        density.x <-  density.all$x[density.var>0.01]
+        density.var <-  density.var[density.var>0.01]
+        
+        modes <- NULL
+        centre.p <- NULL
+        for ( i in 2:(length(density.var)-1) ){
+          if ( (density.var[i] > density.var[i-1]) & (density.var[i] > density.var[i+1]) ) {
+            modes <- c(modes,i)
+          }
+          if ( (density.var[i] < density.var[i-1]) & (density.var[i] < density.var[i+1]) ) {
+            centre.p <- c(centre.p,i)
+          }
+        }
+        
+        new.median<- density.x[modes]
+        new.boundary<- density.x [centre.p]
+        npeaks <-length(new.median)
+        
+        if(npeaks>1){
+          
+          vComposti <- vector("list", npeaks)
+          m.var.sub <- m.var
+          
+          for (i in 1:(npeaks-1)){
+            vComposti[i] <-list(m.var.sub [m.var.sub <new.boundary[i]])
+            m.var.sub[m.var.sub<new.boundary[i]]<-NA
+          }
+          
+          vComposti[npeaks] <- list(m.var.sub)
+          
+          RT.add.stats <- t(sapply(vComposti,function(x) c(Total.ID=length(x[!is.na(x)]),
+                                                           RT.median=round(median(x,na.rm=TRUE),3),
+                                                           RT.shift=round((median(x,na.rm=TRUE)-(quantile(x, prob = 0.25,na.rm=TRUE)-IQR(x,na.rm=TRUE)*3))*60,2),
+                                                           RT.shift=round(((quantile(x, prob = 0.75, na.rm=TRUE)+IQR(x,na.rm=TRUE)*3)-median(x,na.rm=TRUE))*60,2))))
+          
+          colnames(RT.add.stats)<-c("Total.ID","RT.median","RT.shfit.Lower", "RT.shfit.upper")
+          AMDIS.report.RT.stats.add <- AMDIS.report.RT.stats[rownames(AMDIS.report.RT.stats)==metabolite.name,]
+          AMDIS.report.RT.stats.add <- cbind(AMDIS.report.RT.stats.add[,1:3] ,RT.add.stats, AMDIS.report.RT.stats.add[,8:11], row.names = NULL)
+          
+          # re-name
+          for (i in 1:npeaks){
+            AMDIS.report.RT.stats.add$Name[i] <- paste(metabolite.name, " (split peak ", i, ")", sep="")
+          }
+          AMDIS.report.split <- rbind(AMDIS.report.split, AMDIS.report.RT.stats.add)
+        }
+      }
+    }
+    
+    if(is.null(AMDIS.report.split)!=TRUE){
+      AMDIS.report.RT.stats <- rbind(AMDIS.report.RT.stats, AMDIS.report.split)
+    }
+    
+    AMDIS.report.RT.stats <- AMDIS.report.RT.stats[order(AMDIS.report.RT.stats$RT.median, decreasing = FALSE),]
+    File.name <- tclvalue(tkgetSaveFile(initialfile=File.name))
+    write.csv(AMDIS.report.RT.stats, file = File.name,row.names = FALSE)
+    print(paste("AMDIS summary report.csv is generated and save in",workdir, sep=" "))
+  }
+}
+
+
 #' Peak diagnosis by overlay multiple chromatograms
 #'
 #'The user could visually confirm all peaks, and determine whether the peak is due to background noise by selecting <Overlay All Chromatograms> and clicking the <RUN> button in the box of step 3. A popout window will show a figure that plots chromatograms for all identified metabolites. You can also adjust the font size of metabolite names if the display is inappropriate. You must disable the <Fast Mode> to plot overlay of all chromatograms.
