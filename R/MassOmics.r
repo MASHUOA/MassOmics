@@ -1768,6 +1768,13 @@ GCMS_analysis <- function(workdir=tk_choose.dir(caption = "Select working direct
   frameOverall <- tkframe(TMS)
   tkwm.title(TMS,"GC-MS data processing")
 
+  rb3 <- tkradiobutton(TMS,text="   AMDIS   ",indicatoron=F)
+  rb4 <- tkradiobutton(TMS,text="MassHunter",indicatoron=F)
+  lib_search_mode <- tclVar("AMDIS")
+  tkconfigure(rb3,variable=lib_search_mode,value="AMDIS")
+  tkconfigure(rb4,variable=lib_search_mode,value="MassHunter")
+  
+  
   #All the functions
   workingdirctory<-function(){WorkingDir()}
   
@@ -1786,7 +1793,8 @@ GCMS_analysis <- function(workdir=tk_choose.dir(caption = "Select working direct
     RT.shift.limt_s <- as.numeric(tclvalue(multimode.var))
     mz_L_s=as.numeric(tclGetValue("mz_L"))
     mz_U_s=as.numeric(tclGetValue("mz_U"))
-    amdis_id_Summary(workdir=workdir,
+    if (as.character(tclvalue(lib_search_mode))=="AMDIS"){
+     amdis_id_Summary(workdir=workdir,
               MsLibrary=MsLibrary_s,
               Ret.Time.Filter=Ret.Time.Filter_s,
               RT.shift.limt=RT.shift.limt_s,
@@ -1794,8 +1802,21 @@ GCMS_analysis <- function(workdir=tk_choose.dir(caption = "Select working direct
               mz_U=mz_U_s,
               generate_rt_shift_graph=generate_graph,
               RTcorrection=rtchecks
-              )
-    message(paste("Summary report generated:", MsLibrary_s,"library","\nRetention time:",Ret.Time.Filter_s,"Retention time shift:",RT.shift.limt_s,"\nmz range:",mz_L_s,"-",mz_U_s))
+              ) 
+    } else if (as.character(tclvalue(lib_search_mode))=="MassHunter"){
+      MassHunter_id_Summary(workdir=workdir,
+                       MsLibrary=MsLibrary_s,
+                       Ret.Time.Filter=Ret.Time.Filter_s,
+                       RT.shift.limt=RT.shift.limt_s,
+                       mz_L=mz_L_s,
+                       mz_U=mz_U_s,
+                       generate_rt_shift_graph=generate_graph,
+                       RTcorrection=rtchecks
+      ) 
+    }
+    
+    
+    message(paste("Summary report generated:",as.character(tclvalue(lib_search_mode)), MsLibrary_s,"library","\nRetention time:",Ret.Time.Filter_s,"Retention time shift:",RT.shift.limt_s,"\nmz range:",mz_L_s,"-",mz_U_s))
   }
   
   Tips1<-function(){Tips()}
@@ -1880,6 +1901,7 @@ GCMS_analysis <- function(workdir=tk_choose.dir(caption = "Select working direct
 
   ## Upper
   frameUpper <- tkframe(frameOverall,relief="groove",borderwidth=2,padx=5,pady=5)
+  tkgrid(tklabel(frameUpper,text="Select library search mode"),rb3,rb4, sticky="w")
   tkgrid(tklabel(frameUpper,text="Setup Working Directory"),Wdir.but, sticky="w")
   tkgrid(tklabel(frameUpper,text="AutoSelect Reference Ions (NIST)"),Nb,sticky="w")
   

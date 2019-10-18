@@ -363,7 +363,7 @@ amdis_id_Summary<-function(workdir= NULL,
                            mz_U=550,
                            generate_rt_shift_graph=F,
                            generate_rt_shift_graphs=F,
-                           RTcorrection=T
+                           RTcorrection=F
 ){
   library("tcltk")
   library("tcltk2")
@@ -838,7 +838,7 @@ amdis_id_Summary<-function(workdir= NULL,
   }
 }
 
-#' MassHunter report file parsing and summary
+#' MassHunter report file (.cefs) parsing and summary
 #'
 #' This is a function to process the AMDIS_report.txt file. specify a in-house library or a subset of NIST library to find the most intense quantification ion within the GC-MS experiment m/z range. The script will invoke selection windows to let the user specify the files location.  
 #'
@@ -855,12 +855,12 @@ amdis_id_Summary<-function(workdir= NULL,
 #' @return None
 #'
 #' @examples
-#' amdis_id_Summary()
+#' MassHunter_id_Summary()
 #'
 #' @export
 MassHunter_id_Summary<-function(workdir= NULL,
                            MS.L= NULL,
-                           amdis.report = NULL,
+                           MassHunter.report = NULL,
                            File.name = "Summary Report.csv",
                            MsLibrary=c("NIST", "InHouse"),
                            Ret.Time.Filter=2.5,
@@ -869,7 +869,7 @@ MassHunter_id_Summary<-function(workdir= NULL,
                            mz_U=550,
                            generate_rt_shift_graph=F,
                            generate_rt_shift_graphs=F,
-                           RTcorrection=T
+                           RTcorrection=F
 ){
   library("tcltk")
   library("tcltk2")
@@ -881,20 +881,33 @@ MassHunter_id_Summary<-function(workdir= NULL,
   library("ggplot2")
   library("ggpubr")
   library(reticulate)
-  import("os")
-  (source_python("masshunter-massOmics-summary-report.py"))
-  #workdir <- workdir
+  #os <- import("os")
+  #os$listdir(".")
+  #py_install("fuzzywuzzy")
+  #virtualenv_create("r-reticulate")
+  #virtualenv_install("r-reticulate", "fuzzywuzzy")
+  #system("pip install tk")
   if (is.null(workdir)){workdir= tk_choose.dir(caption = "Select working directory")}
-  
-  if (is.null(amdis.report)){amdis.report = tk_choose.files(default = "Select the AMDIS report in .TXT",
-                                                            multi = FALSE, caption = "Select the AMDIS report in .TXT",
-                                                            filter=matrix(c("Text", ".txt", "All files", "*"),2, 2, byrow = TRUE))}
-  
+  if (is.null(MassHunter.report)){MassHunter.report = tk_choose.dir(default = "",caption = "Select the MassHunter report folder contains .cef files")}
   if (is.null(MS.L)){MS.L= tk_choose.files(caption="Select MS library (e.g. SVB_total or NIST) in .msl",
                                            filter=matrix(c("MSL", ".msl", "All files", "*"),2, 2, byrow = TRUE))}
+  
+ #source_python(paste0(file.path(path.package(package="MassOmics")),"/src/masshunter-massOmics-summary-report.py"))
+  rm(parse_cef)
+  rm(return_df)
+  source_python(paste0(file.path(path.package(package="MassOmics")),"/src/parse_Agilent_CEF.py"))
+  return_df<-parse_cef(Folder = MassHunter.report)
+  #workdir <- workdir
+  
+  
+  
+
+  
+  
   setwd(workdir)
-  amdis.report = data.table::fread(amdis.report,sep = "\t", stringsAsFactors=FALSE)
-  message("amdis_id_Summary parameters")
+  MassHunter.report = return_df
+  colnames(MassHunter.report)<-c("Name","n" ,"RT" , "ref","area","height","CAS" )
+  message("MassHunter ID Summary parameters")
   message(paste("RT filter: ", Ret.Time.Filter, " min", sep=""))
   message(paste("Detect mutiple peaks when RT range is greater than: ", RT.shift.limt, " s", sep=""))
   message(paste("Quant mass will be selected within: ", mz_L, "-", mz_U,sep=""))
@@ -939,49 +952,49 @@ MassHunter_id_Summary<-function(workdir= NULL,
     libr$NAME <- gsub("[*:%^!;$]", "", libr$NAME, perl=T)
     
     # Generate Summary report
-    AMDIS.report <-amdis.report
-    AMDIS.report$Name <- gsub("?", "", AMDIS.report$Name, fixed = TRUE)
-    AMDIS.report$Name <- gsub("^ ", "", AMDIS.report$Name, perl=T)
-    AMDIS.report$Name <- gsub("[*:%^!*?&;$]", "", AMDIS.report$Name, perl=T)
-    AMDIS.report$Width <- gsub(">", "",  AMDIS.report$Width, perl=T)
-    AMDIS.report$Width <- as.numeric(gsub("scans", "",  AMDIS.report$Width, perl=T))
-    #AMDIS.reportcas<-AMDIS.report[AMDIS.report$CAS %in% libr$CASNO,]
-    AMDIS.report<-AMDIS.report[AMDIS.report$Name %in% gsub("^ ","",libr$NAME),]
-    #AMDIS.report1<-AMDIS.report[AMDIS.report$Name %in% libr$NAME,]
+    MassHunter.report <-MassHunter.report
+    MassHunter.report$Name <- gsub("?", "", MassHunter.report$Name, fixed = TRUE)
+    MassHunter.report$Name <- gsub("^ ", "", MassHunter.report$Name, perl=T)
+    MassHunter.report$Name <- gsub("[*:%^!*?&;$]", "", MassHunter.report$Name, perl=T)
+    MassHunter.report$Width <- 10
+    #MassHunter.report$Width <- as.numeric(gsub("scans", "",  MassHunter.report$Width, perl=T))
+    #MassHunter.reportcas<-MassHunter.report[MassHunter.report$CAS %in% libr$CASNO,]
+    MassHunter.report<-MassHunter.report[MassHunter.report$Name %in% gsub("^ ","",libr$NAME),]
+    #MassHunter.report1<-MassHunter.report[MassHunter.report$Name %in% libr$NAME,]
     #
     
     if (RTcorrection){
       library(ggpubr)
       RT.correction.grid<-RT_correction_xcms()
-      RT.correction.result<-RT_correction(df=AMDIS.report)
-      AMDIS.report<-RT.correction.result[[1]]
+      RT.correction.result<-RT_correction(df=MassHunter.report)
+      MassHunter.report<-RT.correction.result[[1]]
       ggpubr::ggarrange(RT.correction.result[[2]],RT.correction.result[[3]],
                         labels = c("Before","After"),common.legend = T,
                         ncol = 2, nrow =1,vjust=1.5) %>%  ggexport(filename = paste(getwd(),"/retention time correction.png",sep=""),width = 1800, height = 900,verbose = NULL,res = 100)
       
     }
-    Metabolite.list <-split(AMDIS.report$RT, AMDIS.report$Name)
+    Metabolite.list <-split(MassHunter.report$RT, MassHunter.report$Name)
     RT.stats<-t(sapply(Metabolite.list,function(x) c(RT.median=round(median(x,na.rm=TRUE),3),
                                                      RT.shift=round((median(x,na.rm=TRUE)-(quantile(x, prob = 0.25,na.rm=TRUE)-IQR(x,na.rm=TRUE)*1.5))*60,2),
                                                      RT.shift=round(((quantile(x, prob = 0.75,na.rm=TRUE)+IQR(x,na.rm=TRUE)*1.5)-median(x,na.rm=TRUE))*60,2)
     )))
     colnames(RT.stats)<-c("RT.median","RT.shfit.Lower", "RT.shfit.upper")
     RT.stats=RT.stats[is.na(RT.stats[,"RT.median"])!=T,]
-    Peak.width <- sapply(split(AMDIS.report$Width, AMDIS.report$Name), function(x) median(x))
+    Peak.width <- sapply(split(MassHunter.report$Width, MassHunter.report$Name), function(x) median(x))
     
     
-    ID.stats<-t(sapply(split(AMDIS.report$Weighted, AMDIS.report$Name),function(x) c(Library.match=round(mean(x,na.rm=T)),
+    ID.stats<-t(sapply(split(MassHunter.report$height, MassHunter.report$Name),function(x) c(Library.match=round(mean(x,na.rm=T)),
                                                                                      Total.ID=length(x[!is.na(x)]))))
     #message("Running in NIST mode, will generate Ref ions for each metabolites within mz detection range")
-    AMDIS.report.RT.stats <- data.frame(cbind(Name=0,Ref.ion=0, ID.stats, RT.stats, Peak.width, CAS=0))
-    #message(paste(AMDIS.report.RT.stats$Ref.ion[1:40],sep="\n"))
-    #AMDIS.report.RT.stats$Ref.ion <-  libr$reference_ion[match(strtrim(rownames(RT.stats),70),strtrim(libr$NAME,70))]
+    MassHunter.report.RT.stats <- data.frame(cbind(Name=0,Ref.ion=0, ID.stats, RT.stats, Peak.width, CAS=0))
+    #message(paste(MassHunter.report.RT.stats$Ref.ion[1:40],sep="\n"))
+    #MassHunter.report.RT.stats$Ref.ion <-  libr$reference_ion[match(strtrim(rownames(RT.stats),70),strtrim(libr$NAME,70))]
     #matchID=match(rownames(RT.stats),libr$NAME)
     matchID=match(strtrim(rownames(RT.stats),170),strtrim(libr$NAME,170))
-    #AMDIS.report.RT.stats=AMDIS.report.RT.stats[which(!is.na(matchID)),]
+    #MassHunter.report.RT.stats=MassHunter.report.RT.stats[which(!is.na(matchID)),]
     #matchID70=match(strtrim(rownames(RT.stats),70),strtrim(libr$NAME,70))
     #intersect(matchID,matchID70)
-    AMDIS.report.RT.stats$Ref.ion <-  unlist(parallel::parLapply(cl=autoStopCluster(makeCluster(detectCores()-1)), 
+    MassHunter.report.RT.stats$Ref.ion <-  unlist(parallel::parLapply(cl=autoStopCluster(makeCluster(detectCores()-1)), 
                                                                  matchID,
                                                                  parse_msl_par,lib.txt,starts,stops,mz_L,mz_U))
     
@@ -990,14 +1003,14 @@ MassHunter_id_Summary<-function(workdir= NULL,
     
     #}
     #match("2-Cyclopropylethynylcyclopropane",libr$NAME)
-    #message(AMDIS.report.RT.stats$Ref.ion)
+    #message(MassHunter.report.RT.stats$Ref.ion)
     #which(match(rownames(RT.stats),libr$NAME)==NA)
-    AMDIS.report.RT.stats$CAS <-  libr$CAS[match(strtrim(rownames(RT.stats),70),strtrim(libr$NAME,70))]
-    AMDIS.report.RT.stats$Name <- rownames(RT.stats)
+    MassHunter.report.RT.stats$CAS <-  libr$CAS[match(strtrim(rownames(RT.stats),70),strtrim(libr$NAME,70))]
+    MassHunter.report.RT.stats$Name <- rownames(RT.stats)
     
-    #total.n<-length(unique(AMDIS.report$FileName))
+    #total.n<-length(unique(MassHunter.report$FileName))
     #ID_name<-paste("Total.ID(n=",total.n,")",sep="" )
-    #names(AMDIS.report.RT.stats)[3]<-ID_name
+    #names(MassHunter.report.RT.stats)[3]<-ID_name
     
     
     ## Remove point outside the range
@@ -1024,7 +1037,7 @@ MassHunter_id_Summary<-function(workdir= NULL,
     
     
     
-    AMDIS.report.split<-NULL
+    MassHunter.report.split<-NULL
     deletenamelist<-NULL
     save.folder<-paste("RTshift_warnings_",RT.shift.limt,"s_","shift",sep="")
     if (dir.exists(save.folder)!=T) try(dir.create (save.folder))
@@ -1035,7 +1048,7 @@ MassHunter_id_Summary<-function(workdir= NULL,
         RT_libsimilarity=NULL
         #plot figure
         names.var<- windows_filename(names(Remove.metabolite)[component])
-        RT_libsimilarity<-AMDIS.report[AMDIS.report$Name==names(Remove.metabolite)[component],]
+        RT_libsimilarity<-MassHunter.report[MassHunter.report$Name==names(Remove.metabolite)[component],]
         #nbins=6
         #res <- try(RT_libsimilarity$peakgroup<-OneR::bin(RT_libsimilarity$RT,nbins = nbins,labels = c(paste("Peak",1:nbins)), method = "clusters",na.omit = T),silent = TRUE)
         #if (class(res) != "try-error"){
@@ -1050,7 +1063,7 @@ MassHunter_id_Summary<-function(workdir= NULL,
         # RT_libsimilarity=merge(RT_libsimilarity,RT_libsimilarity.stats)
         
         # }
-        #RT_libsimilarity<-AMDIS.report[AMDIS.report$Name==names(Remove.metabolite)[component],]
+        #RT_libsimilarity<-MassHunter.report[MassHunter.report$Name==names(Remove.metabolite)[component],]
         #RT_libsimilarity$peakgroupRT=median(RT_libsimilarity$peakgroup)
         #RT_libsimilarity$series=1:nrow(RT_libsimilarity)
         #try(RT_libsimilarity<-RT_libsimilarity[order(RT_libsimilarity$FileName),])
@@ -1098,14 +1111,14 @@ MassHunter_id_Summary<-function(workdir= NULL,
                                                            RT.shift=round(((quantile(x, prob = 0.75, na.rm=TRUE)+IQR(x,na.rm=TRUE)*3)-median(x,na.rm=TRUE))*60,2))))
           
           colnames(RT.add.stats)<-c("Total.ID","RT.median","RT.shfit.Lower", "RT.shfit.upper")
-          AMDIS.report.RT.stats.add <- AMDIS.report.RT.stats[rownames(AMDIS.report.RT.stats)==metabolite.name,]
-          AMDIS.report.RT.stats.add <- cbind(AMDIS.report.RT.stats.add[,1:3] ,RT.add.stats, AMDIS.report.RT.stats.add[,8:9], row.names = NULL)
+          MassHunter.report.RT.stats.add <- MassHunter.report.RT.stats[rownames(MassHunter.report.RT.stats)==metabolite.name,]
+          MassHunter.report.RT.stats.add <- cbind(MassHunter.report.RT.stats.add[,1:3] ,RT.add.stats, MassHunter.report.RT.stats.add[,8:9], row.names = NULL)
           
           # re-name
           for (i in 1:npeaks){
-            AMDIS.report.RT.stats.add$Name[i] <- paste(metabolite.name, " (split peak ", i, ")", sep="")
+            MassHunter.report.RT.stats.add$Name[i] <- paste(metabolite.name, " (split peak ", i, ")", sep="")
           }
-          AMDIS.report.split <- rbind(AMDIS.report.split, AMDIS.report.RT.stats.add)
+          MassHunter.report.split <- rbind(MassHunter.report.split, MassHunter.report.RT.stats.add)
           deletenamelist<-c(deletenamelist,metabolite.name)
           
         }          
@@ -1114,7 +1127,7 @@ MassHunter_id_Summary<-function(workdir= NULL,
           #par(mfrow = c(2, 1))
           #png(filename=paste(save.folder,"/",names.var,"lib_score.png",sep=""),width = 900,height = 1200)
           #par(mfrow = c(2, 3))
-          #RT_libsimilarity<-AMDIS.report[AMDIS.report$Name==names(Remove.metabolite)[i],]
+          #RT_libsimilarity<-MassHunter.report[MassHunter.report$Name==names(Remove.metabolite)[i],]
           #RT_libsimilarity$peakgroup="Outliner"
           #RT_libsimilarity$peakgroup_RT_median=RT_libsimilarity$RT
           
@@ -1144,14 +1157,14 @@ MassHunter_id_Summary<-function(workdir= NULL,
           #par(mfrow = c(2, 1))
           #png(filename=paste(save.folder,"/",names.var,"lib_score.png",sep=""),width = 900,height = 1200)
           #par(mfrow = c(2, 3))
-          #RT_libsimilarity<-AMDIS.report[AMDIS.report$Name==names(Remove.metabolite)[i],]
+          #RT_libsimilarity<-MassHunter.report[MassHunter.report$Name==names(Remove.metabolite)[i],]
           RT_libsimilarity$peakgroup="Outliner"
           RT_libsimilarity$peakgroup_RT_median=RT_libsimilarity$RT
-          for (peak in 1: nrow(AMDIS.report.RT.stats.add)){
-            RT_libsimilarity$peakgroup=ifelse(and(RT_libsimilarity$RT>=(AMDIS.report.RT.stats.add$RT.median[peak]-AMDIS.report.RT.stats.add$RT.shfit.Lower[peak]/60),
-                                                  RT_libsimilarity$RT<=(AMDIS.report.RT.stats.add$RT.median[peak]+AMDIS.report.RT.stats.add$RT.shfit.upper[peak]/60)),paste("Peak",peak),RT_libsimilarity$peakgroup)
-            RT_libsimilarity$peakgroup_RT_median=ifelse(and(RT_libsimilarity$RT>=(AMDIS.report.RT.stats.add$RT.median[peak]-AMDIS.report.RT.stats.add$RT.shfit.Lower[peak]/60),
-                                                            RT_libsimilarity$RT<=(AMDIS.report.RT.stats.add$RT.median[peak]+AMDIS.report.RT.stats.add$RT.shfit.upper[peak]/60)),AMDIS.report.RT.stats.add$RT.median[peak],"")
+          for (peak in 1: nrow(MassHunter.report.RT.stats.add)){
+            RT_libsimilarity$peakgroup=ifelse(and(RT_libsimilarity$RT>=(MassHunter.report.RT.stats.add$RT.median[peak]-MassHunter.report.RT.stats.add$RT.shfit.Lower[peak]/60),
+                                                  RT_libsimilarity$RT<=(MassHunter.report.RT.stats.add$RT.median[peak]+MassHunter.report.RT.stats.add$RT.shfit.upper[peak]/60)),paste("Peak",peak),RT_libsimilarity$peakgroup)
+            RT_libsimilarity$peakgroup_RT_median=ifelse(and(RT_libsimilarity$RT>=(MassHunter.report.RT.stats.add$RT.median[peak]-MassHunter.report.RT.stats.add$RT.shfit.Lower[peak]/60),
+                                                            RT_libsimilarity$RT<=(MassHunter.report.RT.stats.add$RT.median[peak]+MassHunter.report.RT.stats.add$RT.shfit.upper[peak]/60)),MassHunter.report.RT.stats.add$RT.median[peak],"")
           }
           names.var<- windows_filename(names(Remove.metabolite)[component])          
           boxplotlibsim <- ggplot(RT_libsimilarity, aes(x=peakgroup, y=Net, fill=peakgroup)) + 
@@ -1187,20 +1200,20 @@ MassHunter_id_Summary<-function(workdir= NULL,
       }
     }
     
-    if(is.null(AMDIS.report.split)!=TRUE){
+    if(is.null(MassHunter.report.split)!=TRUE){
       
       deletenamelist=unique(deletenamelist)
       
-      AMDIS.report.RT.statscombine<-AMDIS.report.RT.stats[!(AMDIS.report.RT.stats$Name %in% (deletenamelist)),]
+      MassHunter.report.RT.statscombine<-MassHunter.report.RT.stats[!(MassHunter.report.RT.stats$Name %in% (deletenamelist)),]
       
-      AMDIS.report.split=unique(AMDIS.report.split)
+      MassHunter.report.split=unique(MassHunter.report.split)
       
-      AMDIS.report.RT.stats <- rbind(AMDIS.report.RT.statscombine, AMDIS.report.split)
+      MassHunter.report.RT.stats <- rbind(MassHunter.report.RT.statscombine, MassHunter.report.split)
     }
     
-    AMDIS.report.RT.stats <- AMDIS.report.RT.stats[order(AMDIS.report.RT.stats$RT.median, decreasing = FALSE),]
+    MassHunter.report.RT.stats <- MassHunter.report.RT.stats[order(MassHunter.report.RT.stats$RT.median, decreasing = FALSE),]
     File.nameNIST <- "Summary report_NIST.csv"
-    write.csv(AMDIS.report.RT.stats, file = File.nameNIST,row.names = FALSE)
+    write.csv(MassHunter.report.RT.stats, file = File.nameNIST,row.names = FALSE)
     write.csv(libr, file = "Library summary.csv",row.names = FALSE)
     
     
@@ -1214,37 +1227,37 @@ MassHunter_id_Summary<-function(workdir= NULL,
     libr<-rez## returns list of peaks
     
     # Generate summary report
-    AMDIS.report<-amdis.report
-    AMDIS.report<-AMDIS.report[AMDIS.report$RT-AMDIS.report$Expec..RT < Ret.Time.Filter,]
-    AMDIS.report<-AMDIS.report[AMDIS.report$RT-AMDIS.report$Expec..RT > -Ret.Time.Filter,]
-    AMDIS.report$Name <- gsub("?", "", AMDIS.report$Name, fixed = TRUE)
-    AMDIS.report$Name <- gsub("^ ", "", AMDIS.report$Name, perl=T)
-    AMDIS.report$Name <- gsub("[*:%^!*?&;$]", "", AMDIS.report$Name, perl=T)
-    AMDIS.report$Width <- gsub(">", "",  AMDIS.report$Width, perl=T)
-    AMDIS.report$Width <- as.numeric(gsub("scans", "",  AMDIS.report$Width, perl=T))
+    MassHunter.report<-MassHunter.report
+    MassHunter.report<-MassHunter.report[MassHunter.report$RT-MassHunter.report$Expec..RT < Ret.Time.Filter,]
+    MassHunter.report<-MassHunter.report[MassHunter.report$RT-MassHunter.report$Expec..RT > -Ret.Time.Filter,]
+    MassHunter.report$Name <- gsub("?", "", MassHunter.report$Name, fixed = TRUE)
+    MassHunter.report$Name <- gsub("^ ", "", MassHunter.report$Name, perl=T)
+    MassHunter.report$Name <- gsub("[*:%^!*?&;$]", "", MassHunter.report$Name, perl=T)
+    MassHunter.report$Width <- gsub(">", "",  MassHunter.report$Width, perl=T)
+    MassHunter.report$Width <- as.numeric(gsub("scans", "",  MassHunter.report$Width, perl=T))
     
     
     
-    Metabolite.list <-split(AMDIS.report$RT, AMDIS.report$Name)
+    Metabolite.list <-split(MassHunter.report$RT, MassHunter.report$Name)
     
     RT.stats<-t(sapply(Metabolite.list,function(x) c(RT.median=round(median(x,na.rm=TRUE),3),
                                                      RT.shift=round((median(x,na.rm=TRUE)-(quantile(x, prob = 0.25)-IQR(x,na.rm=TRUE)*1.5))*60,2),
                                                      RT.shift=round(((quantile(x, prob = 0.75)+IQR(x,na.rm=TRUE)*1.5)-median(x,na.rm=TRUE))*60,2))))
     colnames(RT.stats)<-c("RT.median","RT.shfit.Lower", "RT.shfit.upper")
     
-    Peak.width <- sapply(split(AMDIS.report$Width, AMDIS.report$Name), function(x) median(x))
+    Peak.width <- sapply(split(MassHunter.report$Width, MassHunter.report$Name), function(x) median(x))
     
     
     RT.stats[is.na(RT.stats)]<-0
-    ID.stats<-t(sapply(split(AMDIS.report$Weighted, AMDIS.report$Name),function(x) c(Library.match=round(mean(x,na.rm=T)),
+    ID.stats<-t(sapply(split(MassHunter.report$Weighted, MassHunter.report$Name),function(x) c(Library.match=round(mean(x,na.rm=T)),
                                                                                      Total.ID=length(x[!is.na(x)]))))
-    AMDIS.report.RT.stats<-NULL
-    AMDIS.report.RT.stats <- as.data.frame(cbind(Name=0,Ref.ion=0,ID.stats,RT.stats,Expec.RT=0,Diff.RT=0, Peak.width, CAS=0))
-    AMDIS.report.RT.stats$Ref.ion <- libr$RSN[match(rownames(RT.stats),libr$NAME)]
-    AMDIS.report.RT.stats$Expec.RT <- round(as.numeric(libr$RT[match(rownames(RT.stats),libr$NAME)]),2)
-    AMDIS.report.RT.stats$CAS <- libr$CASNO[match(rownames(RT.stats),libr$NAME)]
-    AMDIS.report.RT.stats$Diff.RT <- AMDIS.report.RT.stats$Expec.RT- as.numeric(AMDIS.report.RT.stats$RT.median)
-    AMDIS.report.RT.stats$Name <- rownames(RT.stats)
+    MassHunter.report.RT.stats<-NULL
+    MassHunter.report.RT.stats <- as.data.frame(cbind(Name=0,Ref.ion=0,ID.stats,RT.stats,Expec.RT=0,Diff.RT=0, Peak.width, CAS=0))
+    MassHunter.report.RT.stats$Ref.ion <- libr$RSN[match(rownames(RT.stats),libr$NAME)]
+    MassHunter.report.RT.stats$Expec.RT <- round(as.numeric(libr$RT[match(rownames(RT.stats),libr$NAME)]),2)
+    MassHunter.report.RT.stats$CAS <- libr$CASNO[match(rownames(RT.stats),libr$NAME)]
+    MassHunter.report.RT.stats$Diff.RT <- MassHunter.report.RT.stats$Expec.RT- as.numeric(MassHunter.report.RT.stats$RT.median)
+    MassHunter.report.RT.stats$Name <- rownames(RT.stats)
     
     
     
@@ -1268,7 +1281,7 @@ MassHunter_id_Summary<-function(workdir= NULL,
     
     
     ## solve multimodel issue
-    AMDIS.report.split<-NULL
+    MassHunter.report.split<-NULL
     
     save.folder<-paste("RTshift_warnings_",RT.shift.limt,"s_","shift",sep="")
     if (dir.exists(save.folder)!=T) try(dir.create (save.folder))
@@ -1324,26 +1337,26 @@ MassHunter_id_Summary<-function(workdir= NULL,
                                                            RT.shift=round(((quantile(x, prob = 0.75, na.rm=TRUE)+IQR(x,na.rm=TRUE)*3)-median(x,na.rm=TRUE))*60,2))))
           
           colnames(RT.add.stats)<-c("Total.ID","RT.median","RT.shfit.Lower", "RT.shfit.upper")
-          AMDIS.report.RT.stats.add <- AMDIS.report.RT.stats[rownames(AMDIS.report.RT.stats)==metabolite.name,]
-          AMDIS.report.RT.stats.add <- cbind(AMDIS.report.RT.stats.add[,1:3] ,RT.add.stats, AMDIS.report.RT.stats.add[,8:11], row.names = NULL)
+          MassHunter.report.RT.stats.add <- MassHunter.report.RT.stats[rownames(MassHunter.report.RT.stats)==metabolite.name,]
+          MassHunter.report.RT.stats.add <- cbind(MassHunter.report.RT.stats.add[,1:3] ,RT.add.stats, MassHunter.report.RT.stats.add[,8:11], row.names = NULL)
           
           # re-name
           for (i in 1:npeaks){
-            AMDIS.report.RT.stats.add$Name[i] <- paste(metabolite.name, " (split peak ", i, ")", sep="")
+            MassHunter.report.RT.stats.add$Name[i] <- paste(metabolite.name, " (split peak ", i, ")", sep="")
           }
-          AMDIS.report.split <- rbind(AMDIS.report.split, AMDIS.report.RT.stats.add)
+          MassHunter.report.split <- rbind(MassHunter.report.split, MassHunter.report.RT.stats.add)
         }
       }
     }
     
-    if(is.null(AMDIS.report.split)!=TRUE){
-      AMDIS.report.RT.stats <- rbind(AMDIS.report.RT.stats, AMDIS.report.split)
+    if(is.null(MassHunter.report.split)!=TRUE){
+      MassHunter.report.RT.stats <- rbind(MassHunter.report.RT.stats, MassHunter.report.split)
     }
     
-    AMDIS.report.RT.stats <- AMDIS.report.RT.stats[order(AMDIS.report.RT.stats$RT.median, decreasing = FALSE),]
+    MassHunter.report.RT.stats <- MassHunter.report.RT.stats[order(MassHunter.report.RT.stats$RT.median, decreasing = FALSE),]
     File.name <- tclvalue(tkgetSaveFile(initialfile=File.name))
-    write.csv(AMDIS.report.RT.stats, file = File.name,row.names = FALSE)
-    print(paste("AMDIS summary report.csv is generated and save in",workdir, sep=" "))
+    write.csv(MassHunter.report.RT.stats, file = File.name,row.names = FALSE)
+    print(paste("MassHunter summary report.csv is generated and save in",workdir, sep=" "))
   }
 }
 
@@ -1800,4 +1813,22 @@ adjustRtimePeakGroups <- function(object, param = PeakGroupsParam(),
     idx[!is.na(idx)]
   })
   x[lengths(x$peakidx) > 0, ]
+}
+
+
+erah_pipeline<-function(workdir=getwd(),infopath=NULL){
+  
+  library(erah)
+  if (is.null(infopath)){tk_choose.files(caption = "Select info file to normalized by SERRF")}
+    #check if it is csv of xlsx
+  if(grepl(".xls.?$", infopath)){
+    pData <- openxlsx::read.xlsx(infopath, sheet = 1,colNames = T)
+  }else if(grepl(".csv", infopath)){
+    # file = "C:\\Users\\Sili Fan\\Downloads\\val (18).csv"
+    if(nrow(d)<2){pData <- read.csv(infopath)}
+    pData <- data.table::fread(infopath)
+  }
+    
+  
+  
 }
