@@ -893,8 +893,9 @@ MassHunter_id_Summary<-function(workdir= NULL,
                                            filter=matrix(c("MSL", ".msl", "All files", "*"),2, 2, byrow = TRUE))}
   
  #source_python(paste0(file.path(path.package(package="MassOmics")),"/src/masshunter-massOmics-summary-report.py"))
-  rm(parse_cef)
-  rm(return_df)
+  #rm(parse_cef)
+  #rm(return_df)
+  setwd(workdir)
   source_python(paste0(file.path(path.package(package="MassOmics")),"/src/parse_Agilent_CEF.py"))
   return_df<-parse_cef(Folder = MassHunter.report)
   #workdir <- workdir
@@ -905,7 +906,7 @@ MassHunter_id_Summary<-function(workdir= NULL,
   
   
   setwd(workdir)
-  MassHunter.report = return_df
+  MassHunter.report =as.data.frame (return_df)
   colnames(MassHunter.report)<-c("Name","n" ,"RT" , "ref","area","height","CAS" )
   message("MassHunter ID Summary parameters")
   message(paste("RT filter: ", Ret.Time.Filter, " min", sep=""))

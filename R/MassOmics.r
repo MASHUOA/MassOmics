@@ -1858,7 +1858,7 @@ GCMS_analysis <- function(workdir=tk_choose.dir(caption = "Select working direct
 
   ## NIST library mode
   Nb <- tkcheckbutton(TMS)
-  NbValue <- tclVar("0")
+  NbValue <- tclVar("1")
   tkconfigure(Nb,variable=NbValue)
   
   ## generate_rt_shift_graph_check
