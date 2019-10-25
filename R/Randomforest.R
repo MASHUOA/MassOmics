@@ -265,7 +265,7 @@ Data_prep_area_SERRF<- function(selectfile=tk_choose.files(caption = "Select are
 #' 
 #' 
 #' 
-SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MSDIAL","MASSOMICS"),infopath=NULL,Log_trans=F){
+SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MSDIAL","MASSOMICS"),infopath=NULL,Log_trans=F,zero_imputaion=T){
   library(tcltk)
   if ('&'(!file.exists(input) , is.null(data))){input =tk_choose.files(caption = "Select area.csv files to normalized by SERRF")}
   if ('&'(datatype=="MASSOMICS" , is.null(data))){infopath =tk_choose.files(caption = "Select caseinfo files")}
@@ -345,38 +345,35 @@ SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MS
   
   # impute missing value.
     e[e==0]<-NA
-  
     e[e=="Inf"]<-NA
-  
+    e[e=="-Inf"]<-NA
     e[e==""]<-NA
-    
     e[e=="NaN"]<-NA
     
     #e[e<0]<-NA
-
+  if (Log_trans) {
+      e<-log(e)
+      e[(e==-Inf)] <- NA
+    }
+  
     
     
-  if((sum(is.na(e)))>0){
+  if(sum(is.na(e))>0){
     missing_compounds = unique(which(is.na(e), arr.ind = T)[,1])
     
     for(i in missing_compounds){
-      e[i, is.na(e[i,])] = 1/2 * min(e[i,!is.na(e[i,])])
-    }
-    
-
       
-    
-    Par_na_impute<-function(i,e){
-      e[i, is.na(e[i,])] = 1/2 * min(e[i,!is.na(e[i,])])
+      if (zero_imputaion){
+      
+         e[i, is.na(e[i,])] = 1/2 * min(e[i,!is.na(e[i,])]) 
+      } else  {
+        e[i, is.na(e[i,])] = 0 
+      }
+      
     }
     
   }
-    
-  if (Log_trans) {
-      e<-log(e)
-      e[(e==-Inf)] <- 0
-    }
-  
+
   e = data.matrix(e)
   
   
@@ -508,7 +505,7 @@ SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MS
       
     }
   }
-  SERRFpc = generate_PCA(norm$e[!is.na(SERRF.validate),],f,p,QC.index, batch , "SERRF")
+  SERRFpc = generate_PCA(norm$e[!is.na(SERRF.validate),],f[!is.na(SERRF.validate),],p,QC.index, batch , "SERRF")
   rawpc = generate_PCA(e,f,p,QC.index, batch , "raw")
   
   SERRFpca=SERRFpc[[1]]
