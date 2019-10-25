@@ -487,33 +487,33 @@ DataCorrection <- function(){
   comboBox1 <- tkwidget(background="white",win1 ,"ComboBox",editable=FALSE,values=SampleType ,textvariable=tclVar("QC"),width=9)
   comboBox2 <- tkwidget(background="white",win1 ,"ComboBox",editable=FALSE,values=StatType ,textvariable=tclVar("SERRF"),width=9)
   
-  Log_trans_check <- tkcheckbutton(win1)
-  Log_trans<- tclVar("0")
-  tkconfigure(Log_trans_check,variable=Log_trans)
+  zero_imputaion_check <- tkcheckbutton(win1)
+  zero_imputaion<- tclVar("1")
+  tkconfigure(zero_imputaion_check,variable=zero_imputaion)
   
   ## Function
   submitC <- function() {
-    Log_trans=tclvalue(Log_trans)
-    if (Log_trans=="0"){Log_trans<-FALSE}
-    if (Log_trans=="1"){Log_trans<-TRUE}
+    zero_imputaion=tclvalue(zero_imputaion)
+    if (zero_imputaion=="0"){zero_imputaion<-FALSE}
+    if (zero_imputaion=="1"){zero_imputaion<-TRUE}
     SampleT <- strsplit(SampleType[[as.numeric(tclvalue(tcl(comboBox1,"getvalue")))+1]],"\\+")[[1]]
     StatT <- StatType[[as.numeric(tclvalue(tcl(comboBox2,"getvalue")))+1]]
     if (StatT %in% c("median","mean")){
-      BatchCorrection(funMeanMedian= StatT , SampleType =  SampleT, Log_trans=Log_trans)
+      BatchCorrection(funMeanMedian= StatT , SampleType =  SampleT)
     }else if (StatT %in% c("SERRF")){
-      SERRF(Predict_level = SampleT,datatype="MASSOMICS",Log_trans=Log_trans)
+      SERRF(Predict_level = SampleT,datatype="MASSOMICS",zero_imputaion=zero_imputaion)
     }
     
   }
   
   submitd <- function() {
-    Log_trans=tclvalue(Log_trans)
-    if (Log_trans=="0"){Log_trans<-FALSE}
-    if (Log_trans=="1"){Log_trans<-TRUE}
+    zero_imputaion=tclvalue(zero_imputaion)
+    if (zero_imputaion=="0"){zero_imputaion<-FALSE}
+    if (zero_imputaion=="1"){zero_imputaion<-TRUE}
     SampleT <- base::strsplit(SampleType[[as.numeric(tclvalue(tcl(comboBox1,"getvalue")))+1]],"\\+")[[1]]
     StatT <- StatType[[as.numeric(tclvalue(tcl(comboBox2,"getvalue")))+1]]
     input=Data_prep_area_SERRF()
-    SERRF(input=input,Predict_level=SampleT,Log_trans=Log_trans)
+    SERRF(input=input,Predict_level=SampleT,zero_imputaion=zero_imputaion)
   }
   
   submitC.but <- tkbutton(win1, text="MassOmics", command=submitC , width= 12)
@@ -526,7 +526,7 @@ DataCorrection <- function(){
   frameCorrection<- tkframe(win1$env$tb3  ,borderwidth=2, relief="groove",padx=5,pady=5)
   tkgrid(tklabel(frameCorrection,text="Centralised batches based on"), comboBox1,pady= 10, padx= 10, sticky="W")
   tkgrid(tklabel(frameCorrection,text="Normalization method"),comboBox2, pady= 10, padx= 10, sticky="w")
-  tkgrid(tklabel(frameCorrection,text="Performe log transformation beforehand"), Log_trans_check, sticky="w")
+  tkgrid(tklabel(frameCorrection,text="Performe Zero value imputation (1/2*min)"), Log_trans_check, sticky="w")
   frameButtonC<- tkframe(win1$env$tb3)
   tkgrid(tklabel(frameButtonC,text=""),  submitC.but,submitd.but, open.but , pady= 10, padx= 10, sticky="w")
   
