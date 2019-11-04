@@ -830,7 +830,20 @@ amdis_id_Summary<-function(workdir= NULL,
     if(is.null(AMDIS.report.split)!=TRUE){
       AMDIS.report.RT.stats <- rbind(AMDIS.report.RT.stats, AMDIS.report.split)
     }
-    
+    if ("CAS" %in% names(AMDIS.report.RT.stats)) {
+      library(stringr)
+      AMDIS.report.RT.stats$CAS<-gsub(" ","",AMDIS.report.RT.stats$CAS)
+      AMDIS.report.RT.stats$CAS<-gsub("-","",AMDIS.report.RT.stats$CAS)
+      AMDIS.report.RT.stats_CAS_width<-str_length(AMDIS.report.RT.stats$CAS)
+      cas_last<-str_sub(AMDIS.report.RT.stats$CAS,AMDIS.report.RT.stats_CAS_width,AMDIS.report.RT.stats_CAS_width)
+      cas_last_23<-str_sub(AMDIS.report.RT.stats$CAS,AMDIS.report.RT.stats_CAS_width-2,AMDIS.report.RT.stats_CAS_width-1)
+      cas_last_rest<-str_sub(AMDIS.report.RT.stats$CAS,1,AMDIS.report.RT.stats_CAS_width-3)
+      casfinal<-data.frame(a=cas_last_rest,b=cas_last_23,c=cas_last,stringsAsFactors = F)
+      cas_final<-unlist(lapply(1:nrow(casfinal),function(x,casfinal){
+        str_glue(casfinal$a[x],"-",casfinal$b[x],"-",casfinal$c[x])
+      },casfinal))
+      AMDIS.report.RT.stats$CAS<-cas_final
+    }
     AMDIS.report.RT.stats <- AMDIS.report.RT.stats[order(AMDIS.report.RT.stats$RT.median, decreasing = FALSE),]
     File.name <- tclvalue(tkgetSaveFile(initialfile=File.name))
     write.csv(AMDIS.report.RT.stats, file = File.name,row.names = FALSE)
@@ -1213,6 +1226,20 @@ MassHunter_id_Summary<-function(workdir= NULL,
     }
     
     MassHunter.report.RT.stats <- MassHunter.report.RT.stats[order(MassHunter.report.RT.stats$RT.median, decreasing = FALSE),]
+    if ("CAS" %in% names(MassHunter.report.RT.stats)) {
+      library(stringr)
+      MassHunter.report.RT.stats$CAS<-gsub(" ","",MassHunter.report.RT.stats$CAS)
+      MassHunter.report.RT.stats$CAS<-gsub("-","",MassHunter.report.RT.stats$CAS)
+      MassHunter.report.RT.stats_CAS_width<-str_length(MassHunter.report.RT.stats$CAS)
+      cas_last<-str_sub(MassHunter.report.RT.stats$CAS,MassHunter.report.RT.stats_CAS_width,MassHunter.report.RT.stats_CAS_width)
+      cas_last_23<-str_sub(MassHunter.report.RT.stats$CAS,MassHunter.report.RT.stats_CAS_width-2,MassHunter.report.RT.stats_CAS_width-1)
+      cas_last_rest<-str_sub(MassHunter.report.RT.stats$CAS,1,MassHunter.report.RT.stats_CAS_width-3)
+      casfinal<-data.frame(a=cas_last_rest,b=cas_last_23,c=cas_last,stringsAsFactors = F)
+      cas_final<-unlist(lapply(1:nrow(casfinal),function(x,casfinal){
+        str_glue(casfinal$a[x],"-",casfinal$b[x],"-",casfinal$c[x])
+      },casfinal))
+      MassHunter.report.RT.stats$CAS<-cas_final
+    }
     File.nameNIST <- "Summary report_NIST.csv"
     write.csv(MassHunter.report.RT.stats, file = File.nameNIST,row.names = FALSE)
     write.csv(libr, file = "Library summary.csv",row.names = FALSE)

@@ -1908,7 +1908,7 @@ GCMS_analysis <- function(workdir=tk_choose.dir(caption = "Select working direct
   tkgrid(tklabel(frameUpper,text="Specify the MZ range"),MZrange_L,MZrange_U,sticky="w")
   tkgrid(tklabel(frameUpper,text="Detect the MZ range"),MZrange_autodetect.but,sticky="w")
   #tkgrid(tklabel(frameUpper,text="Add StandardMix RT (option)"),mergeSM.but,sticky="w ")
-  tkgrid(tklabel(frameUpper,text="Performe RT correction"), RTcorrection_check, sticky="w")
+  tkgrid(tklabel(frameUpper,text="Perform RT correction"), RTcorrection_check, sticky="w")
   tkgrid(tklabel(frameUpper,text="Detect Multiple Peaks - RT Range above"),  multimode.entry,tklabel(frameUpper,text="s"),sticky="w")
   tkgrid(tklabel(frameUpper,text="Retention Time filter by library"), RT.entry,tklabel(frameUpper,text="min  "),sticky="w")
   tkgrid(tklabel(frameUpper,text="Generate plots for RT shift"),generate_rt_shift_graph_check,sticky="w")
