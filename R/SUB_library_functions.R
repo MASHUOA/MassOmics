@@ -907,6 +907,11 @@ create_sub_library <- function(workdir=tk_choose.dir(caption = "Select working d
   
   
   MSP_generate_lib2nist1<-function(){
+    cbVal <- as.character(tclvalue(RI_retrievecbValue))
+    if (cbVal=="0"){RI_retrieve<-FALSE}
+    if (cbVal=="1"){RI_retrieve<-TRUE}
+    RI_column_type=RI_column_typecbValue[[as.numeric(tclvalue(tcl(RI_column_typecb,"getvalue")))+1]]
+    message(paste("Retrieve RI from NIST website",RI_retrieve,", Column: ",RI_column_type))
     cbVal <- as.character(tclvalue(convert_MSPtoMSLcbcbValue))
     if (cbVal=="0"){convert<-FALSE}
     if (cbVal=="1"){convert<-TRUE}
@@ -914,11 +919,23 @@ create_sub_library <- function(workdir=tk_choose.dir(caption = "Select working d
                                      multi = F, caption = "Select the merged library entries file in csv format")
     message(paste("Generate msp for",entryfile,"\nusing lib2nist.exe in",as.character(tclGetValue("lib2nistpath")),"\nGenerate MSL library as well:",convert))
     lib2nistpath=as.character(tclGetValue("lib2nistpath"))
-    MSP_generate_lib2nist(unique_Entry_no=entryfile,lib2nistpath = lib2nistpath,convert_MSPtoMSL=convert)
+    MSP_generate_lib2nist(unique_Entry_no=entryfile,lib2nistpath = lib2nistpath,convert_MSPtoMSL=convert,RI_retrieve=RI_retrieve,RI_column_type=RI_column_type)
   }
   
+  RI_retrievecb <- tkcheckbutton(TMS)
+  RI_retrievecbValue <- tclVar("0")
+  tkconfigure(RI_retrievecb,variable=RI_retrievecbValue)
+  
+  RI_column_typecbValue <- (c("5ms","wax"))
+  RI_column_typecb <- tkwidget(background="white",TMS ,"ComboBox",editable=FALSE,values=RI_column_typecbValue ,textvariable=tclVar("5ms"),width=9)
+  
   msp_to_msl1<-function(){
-    msp_to_msl()
+    cbVal <- as.character(tclvalue(RI_retrievecbValue))
+    if (cbVal=="0"){RI_retrieve<-FALSE}
+    if (cbVal=="1"){RI_retrieve<-TRUE}
+    RI_column_type=RI_column_typecbValue[[as.numeric(tclvalue(tcl(RI_column_typecb,"getvalue")))+1]]
+    message(paste("Retrieve RI from NIST website",RI_retrieve,", Column: ",RI_column_type))
+    msp_to_msl(RI_retrieve=RI_retrieve,RI_column_type=RI_column_type)
   }
   
   #tclSetValue("convert_MSPtoMSL",0)
@@ -961,6 +978,8 @@ create_sub_library <- function(workdir=tk_choose.dir(caption = "Select working d
   
   ## Upper 2
   frameUpper2 <- tkframe(frameOverall,relief="groove",borderwidth=2,padx=5,pady=5)
+  tkgrid(tklabel(frameUpper2,text="Retrieve RI from NIST"), RI_retrievecb,sticky="W")
+  tkgrid(tklabel(frameUpper2,text="Select COlumn typr for RI retrieving"), RI_column_typecb,sticky="W")
   tkgrid(tklabel(frameUpper2,text="Specify NIST folder"),lib2nistpathentry,sticky="w")
   tkgrid(tklabel(frameUpper2,text="Generate MSP library"),GeneratMSP.but1, sticky="w")
   tkgrid(tklabel(frameUpper2,text="Convert MSP to MSL library"),convert_MSPtoMSLcb, sticky="w")
@@ -1314,7 +1333,7 @@ ChemstationLibraryEntry<-function(workdir=NULL,rootdir=dirname(workdir)){
 
 
 
-msp_to_msl<-function(mspfile=NULL){
+msp_to_msl<-function(mspfile=NULL,RI_retrieve=T,RI_column_type=c("5ms","wax"),save_new_msp=RI_retrieve){
   library(tcltk)
   standard_msp_col=c("Name","MW","RI","Comment","CASNO","Formula","Num peaks")
   standard_MSL_col=c("NAME","MW","RI","COMMENT","CASNO","FORM","NUM PEAKS")
@@ -1323,6 +1342,8 @@ msp_to_msl<-function(mspfile=NULL){
   mspcontent1<-mspcontent[-grep("^[ ]*$",mspcontent)]
   att.nms<-unique(sapply(strsplit(mspcontent1[grep(":",mspcontent1)],":"),function(x) x[1]))
   entry.nms<-sapply(strsplit(mspcontent1[grep("Name:",mspcontent1)],"Name:"), function(x) x[2])
+  cas.nms<-sapply(strsplit(mspcontent1[grep("CASNO:",mspcontent1)],"CASNO:"), function(x) x[2])
+  cas.nms<-casno_reformating_string(cas.nms,hypon = F)
   comments.nms<-sapply(strsplit(mspcontent1[grep("Comment:",mspcontent1)],"Comment:"), function(x) x[2])
   rez<-matrix(NA, nrow=length(entry.nms), ncol=length(att.nms), dimnames=list(NULL,att.nms ))
   starts<-grep("Name:", mspcontent)
@@ -1344,10 +1365,60 @@ msp_to_msl<-function(mspfile=NULL){
   }
   
   rez<-rez[,c("Name","Comment","MW","RI","Formula","CASNO","SOURCE","Num.peaks")]
+  rez<-casno_reformating(rez,hypon = F)
+  if (RI_retrieve){
+    message(paste("Retrieving RI information... Selected colomn type:",RI_column_type))
+    library(reticulate)
+    library(pbapply)
+    source_python(paste0(file.path(path.package(package="MassOmics")),"/src/lookup_ri.py"))
+    retrieve_CASNO<-unique(rez$CASNO)
+    retrieve_RI<-pblapply(retrieve_CASNO,function(x, RI_column_type){
+      library(reticulate)
+      library(MassOmics)
+      source_python(paste0(file.path(path.package(package="MassOmics")),"/src/lookup_ri.py"))
+      get_ri(x, RI_column_type)
+    }, RI_column_type,cl=autoStopCluster(detectCores()))
+    retrieve_df<-data.frame(stringsAsFactors = F,CASNO=retrieve_CASNO,Retrieved_RI=unlist(retrieve_RI))
+    rez_merge<-merge(rez,retrieve_df,by="CASNO")
+    rez_merge$RI<-rez_merge$Retrieved_RI
+    org_rez<-rez
+    rez<-rez_merge[,c("Name","Comment","MW","RI","Formula","CASNO","SOURCE","Num.peaks")]
+  }
+  if(save_new_msp){
+    mspcontent_new<-character(0)
+    for (i in 1:length(starts)){
+      tmp<-mspcontent[starts[i]:stops[i]]
+      rez$RI[rez$CASNO==cas.nms[i]]
+      strsplit(tmp,":")
+      find_RI<-sapply(strsplit(tmp,":"), function(x){
+        if (length(x)>0)
+        {if (x[1]=="RI"){T}else{F}
+        }else{F}
+      })
+      rt_RI<-unique(rez$RI[rez$CASNO==cas.nms[i]])
+      if(rt_RI!=-1){
+      if (sum(find_RI)==1){
+        tmp[which(find_RI)]=paste0("RI:",rt_RI)
+      }else{
+        #message(paste("find",i))
+        tmp=c(tmp[1],paste0("RI:",rt_RI),tmp[2:length(tmp)])
+      }
+      }else if(sum(find_RI)==1){
+        tmp<-tmp[-which(find_RI)]
+      }
+      
+      mspcontent_new<-c(mspcontent_new,tmp)
+    }
+    newmspfile<-paste0(gsub(".MSP","",mspfile,ignore.case = T),"_RI_",RI_column_type,".MSP")
+    writeLines(mspcontent_new,newmspfile)
+    message("New MSP file have been created!")
+  }
+  
+  
   colnames(rez)<-c("NAME","COMMENT","MW","RI","FORM","CASNO","SOURCE","NUM PEAKS")
   
       
-  SumMSL=parSapply(cl=autoStopCluster(makeCluster(detectCores()-1)),1:nrow(rez),generateMSL_par,rez,starts,stops,mspcontent)
+  SumMSL=parSapply(cl=autoStopCluster(makeCluster(detectCores())),1:nrow(rez),generateMSL_par,rez,starts,stops,mspcontent)
   SumMSL=paste0(SumMSL,collapse = "\n")
   sink(paste0(gsub(".MSP","",mspfile),".MSL"))
   cat(SumMSL)
@@ -1406,7 +1477,7 @@ generateMSL_par<- function(i,rez,starts,stops,mspcontent){
   return(writeLinetmp)
 }
 
-MSP_generate_lib2nist<-function(unique_Entry_no="",lib2nistpath="C:\\NIST17\\MSSEARCH",convert_MSPtoMSL=T){
+MSP_generate_lib2nist<-function(unique_Entry_no="",lib2nistpath="C:\\NIST17\\MSSEARCH",convert_MSPtoMSL=T,RI_retrieve=F,RI_column_type="5ms"){
   library("tcltk")
   if(lib2nistpath==""){ lib2nistpath=  tk_choose.dir(caption = "Select lib2nist directory") }
   
@@ -1482,7 +1553,7 @@ MSP_generate_lib2nist<-function(unique_Entry_no="",lib2nistpath="C:\\NIST17\\MSS
   
   if(convert_MSPtoMSL){
     mspfile=paste0(gsub("/","\\\\",wdpath),"\\Mylib_",libraryname,".MSP")
-    msp_to_msl(mspfile=mspfile)
+    msp_to_msl(mspfile=mspfile,RI_retrieve=RI_retrieve,RI_column_type=RI_column_type)
   }
     
   }
@@ -1490,7 +1561,7 @@ MSP_generate_lib2nist<-function(unique_Entry_no="",lib2nistpath="C:\\NIST17\\MSS
   
 }
 
-MSP_generate_lib2nist_a<-function(unique_Entry_no="",lib2nistpath="C:/NIST17/MSSEARCH",convert_MSPtoMSL=T){
+MSP_generate_lib2nist_a<-function(unique_Entry_no="",lib2nistpath="C:/NIST17/MSSEARCH",convert_MSPtoMSL=T,RI_retrieve=F,RI_column_type="5ms"){
   library("tcltk")
   wdpath=base::dirname(unique_Entry_no)
   if(lib2nistpath==""){ lib2nistpath=  tk_choose.dir(caption = "Select lib2nist directory") }
@@ -1544,7 +1615,7 @@ MSP_generate_lib2nist_a<-function(unique_Entry_no="",lib2nistpath="C:/NIST17/MSS
   
   if(convert_MSPtoMSL){
     mspfile=paste0(wdpath,"/Mylib.MSP")
-    msp_to_msl(mspfile=mspfile)
+    msp_to_msl(mspfile=mspfile,RI_retrieve=RI_retrieve,RI_column_type=RI_column_type)
     
   }
   

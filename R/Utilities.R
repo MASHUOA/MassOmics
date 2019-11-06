@@ -327,3 +327,79 @@ Creat_short_cut<-function(){
          Darwin = {message("Sorry the Massomics shortcut only available for windows now.")}) 
   
 }
+
+casno_reformating<-function(df,hypon=T){
+  
+if ("CAS" %in% names(df)) {
+  library(stringr)
+  df$CAS<-gsub(" ","",df$CAS)
+  df$CAS<-gsub("-","",df$CAS)
+  if (hypon) {
+  df_CAS_width<-str_length(df$CAS)
+  cas_last<-str_sub(df$CAS,df_CAS_width,df_CAS_width)
+  cas_last_23<-str_sub(df$CAS,df_CAS_width-2,df_CAS_width-1)
+  cas_last_rest<-str_sub(df$CAS,1,df_CAS_width-3)
+  casfinal<-data.frame(a=cas_last_rest,b=cas_last_23,c=cas_last,stringsAsFactors = F)
+  cas_final<-unlist(lapply(1:nrow(casfinal),function(x,casfinal){
+    str_glue(casfinal$a[x],"-",casfinal$b[x],"-",casfinal$c[x])
+  },casfinal))
+  df$CAS<-cas_final
+  }
+} else if ("CASNO" %in% names(df)) {
+  library(stringr)
+  df$CASNO<-gsub(" ","",df$CASNO)
+  df$CASNO<-gsub("-","",df$CASNO)
+  if (hypon) {
+  df_CASNO_width<-str_length(df$CASNO)
+  CASNO_last<-str_sub(df$CASNO,df_CASNO_width,df_CASNO_width)
+  CASNO_last_23<-str_sub(df$CASNO,df_CASNO_width-2,df_CASNO_width-1)
+  CASNO_last_rest<-str_sub(df$CASNO,1,df_CASNO_width-3)
+  CASNOfinal<-data.frame(a=CASNO_last_rest,b=CASNO_last_23,c=CASNO_last,stringsAsFactors = F)
+  CASNO_final<-unlist(lapply(1:nrow(CASNOfinal),function(x,CASNOfinal){
+    str_glue(CASNOfinal$a[x],"-",CASNOfinal$b[x],"-",CASNOfinal$c[x])
+  },CASNOfinal))
+  df$CASNO<-CASNO_final
+  }
+}else{
+  message("No CAS column found in the data.frame...")
+}
+  return(df)
+}
+
+casno_reformating_string<-function(str,hypon=T){
+  str$CAS=str
+  if ("CAS" %in% names(str)) {
+    library(stringr)
+    str$CAS<-gsub(" ","",str$CAS)
+    str$CAS<-gsub("-","",str$CAS)
+    if (hypon) {
+      str_CAS_width<-str_length(str$CAS)
+      cas_last<-str_sub(str$CAS,str_CAS_width,str_CAS_width)
+      cas_last_23<-str_sub(str$CAS,str_CAS_width-2,str_CAS_width-1)
+      cas_last_rest<-str_sub(str$CAS,1,str_CAS_width-3)
+      casfinal<-data.frame(a=cas_last_rest,b=cas_last_23,c=cas_last,stringsAsFactors = F)
+      cas_final<-unlist(lapply(1:nrow(casfinal),function(x,casfinal){
+        str_glue(casfinal$a[x],"-",casfinal$b[x],"-",casfinal$c[x])
+      },casfinal))
+      str$CAS<-cas_final
+    }
+  } else if ("CASNO" %in% names(str)) {
+    library(stringr)
+    str$CASNO<-gsub(" ","",str$CASNO)
+    str$CASNO<-gsub("-","",str$CASNO)
+    if (hypon) {
+      str_CASNO_width<-str_length(str$CASNO)
+      CASNO_last<-str_sub(str$CASNO,str_CASNO_width,str_CASNO_width)
+      CASNO_last_23<-str_sub(str$CASNO,str_CASNO_width-2,str_CASNO_width-1)
+      CASNO_last_rest<-str_sub(str$CASNO,1,str_CASNO_width-3)
+      CASNOfinal<-data.frame(a=CASNO_last_rest,b=CASNO_last_23,c=CASNO_last,stringsAsFactors = F)
+      CASNO_final<-unlist(lapply(1:nrow(CASNOfinal),function(x,CASNOfinal){
+        str_glue(CASNOfinal$a[x],"-",CASNOfinal$b[x],"-",CASNOfinal$c[x])
+      },CASNOfinal))
+      str$CASNO<-CASNO_final
+    }
+  }else{
+    message("No CAS column found in the data.frame...")
+  }
+  return(str$CAS)
+}
