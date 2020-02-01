@@ -4,9 +4,13 @@
 \alias{GCMS_integration}
 \title{GCMS_integration}
 \usage{
-GCMS_integration(output = "GC-MS Result", Ion.bin = 0.5,
-  workdir = getwd(), intensity_type = c("Peak Area", "Peak Height"),
-  GGReport = c("Fast", "Slow"))
+GCMS_integration(
+  output = "GC-MS Result",
+  Ion.bin = 0.5,
+  workdir = getwd(),
+  intensity_type = c("Peak Area", "Peak Height"),
+  GGReport = c("Fast", "Slow")
+)
 }
 \arguments{
 \item{output}{specify the output file name initial}

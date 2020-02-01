@@ -4,7 +4,12 @@
 \alias{msp_to_msl}
 \title{msp_to_msl}
 \usage{
-msp_to_msl(mspfile = NULL)
+msp_to_msl(
+  mspfile = NULL,
+  RI_retrieve = T,
+  RI_column_type = c("5ms", "wax"),
+  save_new_msp = RI_retrieve
+)
 }
 \arguments{
 \item{mspfile}{specify the mspfile file name with its location}

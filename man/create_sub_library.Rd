@@ -4,8 +4,9 @@
 \alias{create_sub_library}
 \title{create_sub_library}
 \usage{
-create_sub_library(workdir = tk_choose.dir(caption =
-  "Select working directory"))
+create_sub_library(
+  workdir = tk_choose.dir(caption = "Select working directory")
+)
 }
 \arguments{
 \item{workdir}{locate the working Dir}

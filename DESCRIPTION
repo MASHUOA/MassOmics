@@ -11,13 +11,13 @@ License: GPL-2
 LazyLoad: yes
 NeedsCompilation: no
 Packaged: 
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.2
 Encoding: UTF-8
 Imports: 
     tcltk,tcltk2,Rcpp,openxlsx,tidyr,randomForest,rfviz,ggpubr,extrafont,xcms,svDialogs,reticulate,
     svGUI,KEGGREST,RColorBrewer,rgl,mixOmics,plyr,flux,tkrplot,multtest,XML,checkmate,pbapply,
     CAMERA,qvalue,doParallel,BiocManager,pacman,backports,BiocParallel,zip,PAPi,stringdist,OneR,pander,uuid,
-    officer,systemfonts,gdtools,rvg,impute
+    officer,systemfonts,gdtools,rvg,impute,faahKO
 Suggests: 
     covr,
     devtools

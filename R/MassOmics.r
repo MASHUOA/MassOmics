@@ -831,7 +831,12 @@ LcOrbitalTRap <- function(){
   require(flux)
   require(tcltk)
 
-  require (mzmatch.R)
+  if (!require(mzmatch.R)){
+  Sys.setenv(R_REMOTES_NO_ERRORS_FROM_WARNINGS=T)
+  devtools::install_github("andzajan/mzmatch.R",upgrade ="never",quiet = T) 
+  require(mzmatch.R)
+  } 
+  
   mzmatch.init(version.1=FALSE)
   #require(RColorBrewer)
 
@@ -1244,7 +1249,7 @@ LcOrbitalTRap <- function(){
     h.entry <- tkentry(background="white",kk, textvariable=hvar, width=17)
 
     # Choose between peakheight or area
-    Peak <- c("Peak Height","Peak Area")
+    Peak <- c("Peak Area","Peak Height")
     comboBox <- tkwidget(kk,"ComboBox",editable=FALSE,values=Peak,textvariable=tclVar("Peak Area"),width=15)
 
     # Reset function
@@ -1931,7 +1936,7 @@ GCMS_analysis <- function(workdir=tk_choose.dir(caption = "Select working direct
   ## choose between peakheight or area
 
   Peak <- c("Peak Area","Peak Height")
-  comboBox <- tkwidget(TMS,"ComboBox",editable=FALSE,values=Peak,textvariable=tclVar("Peak Height"),width=12)
+  comboBox <- tkwidget(TMS,"ComboBox",editable=FALSE,values=Peak,textvariable=tclVar("Peak Area"),width=12)
 
   # tkgrid(tklabel(frameMid,text="Manually correct the Identification Report"),Tips.but,sticky="w")
   tkgrid(tklabel(frameMid,text="Fast Mode (No Chromatograms)"),cb,sticky="w")
@@ -2286,10 +2291,11 @@ run <- function(){
   tkadd(PAPi ,"command", label = "Run pathway analysis", command = function() run_PAPi())
 
   #image
+  status_text<-"Maintainer: George GUO (George.GUO@auckland.ac.nz)"
   image.path<-c(paste(file.path(path.package(package="MassOmics")),"/R/LabLogo.gif", sep=""))
   FrontImage<-tcl("image",  "create", "photo", "MaxC1.image", file=image.path)
   tkgrid(tklabel(tt,image=FrontImage))
-  tkgrid(tklabel(tt,text="Maintainer: George GUO (George.GUO@auckland.ac.nz)"))
+  tkgrid(tklabel(tt,text=status_text))
   tkfocus(tt)
   ##Update 29April2016
 }

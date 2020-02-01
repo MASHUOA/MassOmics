@@ -265,7 +265,7 @@ Data_prep_area_SERRF<- function(selectfile=tk_choose.files(caption = "Select are
 #' 
 #' 
 #' 
-SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MSDIAL","MASSOMICS"),infopath=NULL,Log_trans=F,zero_imputaion=T){
+SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MSDIAL","MASSOMICS"),infopath=NULL,Log_trans=F,zero_imputaion=T,vis_norm_result=F){
   library(tcltk)
   if ('&'(!file.exists(input) , is.null(data))){input =tk_choose.files(caption = "Select area.csv files to normalized by SERRF")}
   if ('&'(datatype=="MASSOMICS" , is.null(data))){infopath =tk_choose.files(caption = "Select caseinfo files")}
@@ -560,7 +560,38 @@ SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MS
     write.table(massomicsoupt, file=paste0(dirname(input),"/Serrf_normed_as_",Predict_level,".csv"),row.names=FALSE, col.names=T, sep=",")
   }
   
-  
+  if(vis_norm_result){
+    means.s.before<-apply(e[,p$sampleType==SampleType],1,mean, na.rm=T)
+    sds.s.before<-apply(e[,p$sampleType==SampleType],1,sd, na.rm=T)
+    cv.s.before<-sds.s.before/means.s.before
+    
+    means.s.post<-apply(norm$e[,p$sampleType==SampleType],1,mean, na.rm=T)
+    sds.s.post<-apply(norm$e[,p$sampleType==SampleType],1,sd, na.rm=T)
+    cv.s.post<-sds.s.post/means.s.post
+    dev.new.OS()
+    reg1 <- lm(cv.s.before~cv.s.post)
+    plot(cv.s.post, cv.s.before, ylab='Coefficent of variation (CV) before batch correction',
+         xlab='Coefficent of variation (CV) after batch correction' ,main='QCs',col="red")
+    abline(reg1)
+    abline(a=0,b=1, col = "lightgray", lty = 3)
+    mtext(paste("Number of imrpoved metabolites:", sum(cv.s.before > cv.s.post,na.rm = T))) 
+    
+    means.s.before<-apply(e[,p$sampleType=="Sample"],1,mean, na.rm=T)
+    sds.s.before<-apply(e[,p$sampleType=="Sample"],1,sd, na.rm=T)
+    cv.s.before<-sds.s.before/means.s.before
+    
+    means.s.post<-apply(norm$e[,p$sampleType=="Sample"],1,mean, na.rm=T)
+    sds.s.post<-apply(norm$e[,p$sampleType=="Sample"],1,sd, na.rm=T)
+    cv.s.post<-sds.s.post/means.s.post
+    dev.new.OS()
+    reg1 <- lm(cv.s.before~cv.s.post)
+    plot(cv.s.post, cv.s.before, ylab='Coefficent of variation (CV) before batch correction',
+         xlab='Coefficent of variation (CV) after batch correction' ,main='Samples',col="red")
+    abline(reg1)
+    
+    abline(a=0,b=1, col = "lightgray", lty = 3)
+    mtext(paste("Number of imrpoved metabolites:", sum(cv.s.before > cv.s.post,na.rm = T))) 
+  }
   
   return(Norm_finaltable)
   
@@ -755,8 +786,9 @@ SERRF_native <- function(input = "Area.csv",Predict_level="QC",data=NULL){
       qc = rep(F, nrow(p))
       qc[p$sampleType=="QC"] = TRUE
       ggplot(pca.data, aes(PC1, PC2, color = batch.QC,group=batch.QC, size = qc, order = order)) +
-        geom_point(alpha = 0.8) +
-        stat_ellipse( linetype = 2, size = 0.5) +
+        
+        stat_ellipse( linetype = 1, size = 0.5 ,geom = "polygon",alpha = 1/3, aes(fill = batch.QC)) +
+        geom_point(shape =21,stroke =1,size=1) +
         labs(x = paste0("PC1: ",signif(variance[1]*100,3),"%"), y = paste0("PC2: ",signif(variance[2]*100,3),"%"),
              title = method) +
         xlim(-25, 25) +

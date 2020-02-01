@@ -1,10 +1,33 @@
-**Batch processing using the NIST Mass Spectral Libr­­ary**
-
-Guangyu GUO, Elizabeth J. McKenzie, M. Beatrix Jones, Megan Friesen,
-Erica Zarate, Stephanie Andraos, Ting-Li Han.
-
-**Introduction**
-
+---
+title: "MassOmics"
+subtitle: "An R package of untargeted metabolomics Batch processing using the NIST Mass Spectral Library"
+author:
+- Guangyu GUO
+- Elizabeth J. McKenzie
+- M. Beatrix Jones
+- Megan Friesen
+- Erica Zarate
+- Stephanie Andraos
+- Ting-Li Han
+output:
+  html_document: 
+    keep_md: yes
+    toc: yes
+    toc_float: true
+    collapsed: false
+    theme: spacelab
+    number_sections: yes
+    df_print: tibble
+    highlight: zenburn
+    fig_width: 10
+    fig_height: 10
+  pdf_document: default
+  word_document: default
+  md_document:
+    variant: markdown_github
+bibliography: references.bib
+---
+# abstract:
 Large-scale gas chromatography-mass spectrometry (GC-MS) based
 untargeted metabolomics, where hundreds or thousands of samples are
 analysed over a period of weeks or months, has specific challenges.
@@ -62,52 +85,24 @@ In 2018, George Guangyu GUO became the maintainer of this package. He
 has added machine learning-powered batch effect removal functions,
 refined the processing pipeline and R package build.
 
-# Contents
+# Package installation
+This is an tutorial for use of MassOmics. To access the software use the installation codes as below: 
 
-[Preprocessing 3](#preprocessing)
 
-[Accessing the software 3](#accessing-the-software)
-
-[Agilent Chemstation: create subset NIST library
-4](#agilent-chemstation-create-subset-nist-library)
-
-[R console: merge the identification output to make a library
-6](#r-console-merge-the-identification-output-to-make-a-library)
-
-[Lib2 NIST converter: convert library to AMDIS compatible format
-7](#lib2-nist-converter-convert-library-to-amdis-compatible-format)
-
-[AMDIS: Convert and merge libraries
-7](#amdis-convert-and-merge-libraries)
-
-[AMDIS: optimise deconvolution and identification settings
-8](#amdis-optimise-deconvolution-and-identification-settings)
-
-[AMDIS: deconvolute and identify 9](#amdis-deconvolute-and-identify)
-
-[R-console: Produce summary report
-10](#r-console-produce-summary-report)
-
-[R-console: Curation of summary report
-10](#r-console-curation-of-summary-report)
-
-[Batch integration 11](#batch-integration)
-
-[R-console: Integrate peaks 11](#r-console-integrate-peaks)
-
-[R-Console: Laboratory contaminant removal
-12](#r-console-laboratory-contaminant-removal)
-
-[Excel: Manual filtering 13](#excel-manual-filtering)
-
-[Updating the Summary Report 14](#updating-the-summary-report)
-
-[R console: Normalisation 14](#r-console-normalisation)
-
-[R console: Batch correction normalisation using sample median
-15](#r-console-batch-correction-normalisation-using-sample-median)
-
-[Reproducibility 15](#reproducibility)
+```r
+#install the git package
+install.packages("devtools")
+Sys.setenv(R_REMOTES_NO_ERRORS_FROM_WARNINGS=T)
+library(devtools)
+install_github("MASHUOA/MassOmics")
+3
+no
+#Update all dependencies
+BiocManager::install(ask = F)
+yes
+library(MassOmics)
+Creat_short_cut()
+```
 
 # Preprocessing
 
@@ -119,8 +114,24 @@ the subset library is to enable the AMDIS software, which has a
 limitation on library size, to deconvolute and identify features.
 
 ## Accessing the software
+### Access the package from a windows desktop
+If you run the following code in a windows OS, you will find a MassOmics shortcut on the desktop. Double click the shortcut, and the MassOmics package will run without any further input.
 
-To access the ChemStation and AMDIS software from a remote computer:
+
+```r
+library(MassOmics)
+Creat_short_cut()
+```
+
+### Access the package from R console
+If you are using other OS (e.g. Mac or Linux), you can initiate the R.GUI console and input the following codes. More instructions can be found in the misc section.
+
+```r
+library(MassOmics)
+MassOmics.GUI()
+```
+
+### Access the package, ChemStation and AMDIS software from a remote computer
 
 1)  Click the Start button
 
@@ -359,7 +370,7 @@ library with the NIST. *
     
     16. If you are only using the NIST library: Click the ‘Create New
         Library’ - and give it a meaningful name
-        e.g.: ‘petrel\_NIST05\_subset.msl’. Click ‘OK’. An empty .msl
+        e.g.: ‘petrel\_NIST05\_subset.msl’. Click ‘OK’. An empty .msl
         file will be created in your folder.
     
     17. If you are merging both NIST and in-house libraries: Click the
@@ -592,12 +603,12 @@ the very beginning and very end.*
 68. Create a copy of the summary report generated as a reference file.
 
 69. Open the Summary report and sort by Total ID and delete all that are
-    \< 10% of your dataset or a value that you determine based on your
+    \< 10% of your dataset or a value that you determine based on your
     hypothesis (for example, half of the smallest possible confounding
     group).
 
 70. Sort largest to smallest by ret time shift (stdev) upper and colour
-    code all \> 30sec. Do the same for ret time stdev lower. Save the
+    code all \> 30sec. Do the same for ret time stdev lower. Save the
     file as .xls
 
 71. Sort by name (A-Z) and check through the ‘split’ peaks, using the
@@ -860,7 +871,7 @@ the very beginning and very end.*
 131. Choose “Format MassOmics data for pathway analysis" tab. This
      function will return a pathway analysis formatted file for you. The
      function will need you to point out two files’ location: File1
-      integration result file, file2 sample info file.
+      integration result file, file2 sample info file.
      
      ![](media/image18.png)
 
@@ -889,3 +900,130 @@ the very beginning and very end.*
      identities in KEGG library.
 
 ![](media/image22.png)
+
+# Miscellaneous
+## Example data
+The MassOmics comes with a series of Maildi imaging data sets acquired from either FT-ICR or TOF. By the following codes, you can download these raw data set into a local folder.  
+
+
+```r
+#install.packages("piggyback")
+library(piggyback)
+library(MassOmics)
+Sys.setenv(GITHUB_TOKEN="a124a067ed1c84f8fd577c972845573922f1bb0f")
+#made sure that this foler has enough space
+wd=paste0(file.path(path.package(package="MassOmics")),"/data/")
+setwd(wd)
+pb_download("Data.tar.gz", repo = "MASHUOA/MassOmics", dest = ".")
+untar('Data.tar.gz',exdir =".",  tar="tar")
+#unlink('Data.tar.gz')
+list.dirs()
+```
+
+THe example is a large scale untargeted metabolomics dataset includes 400 GC-MS runs. In the data folder you will find a table of the sample information.
+
+
+## For Mac OS users
+
+You may need to update the Xcode. Go to your Mac OS terminal and input:
+
+
+```bash
+xcode-select --install
+```
+
+You'll then receive:
+*xcode-select: note: install requested for command line developer tools*
+You will be prompted at this point in a window to update Xcode Command Line tools. 
+
+You may also need to install the X11.app and tcl/tk support for Mac system:
+
++ X11.app:
+https://www.xquartz.org/
+
++ Use the following link to download and install the correct tcltk package for your OS version.
+https://cran.r-project.org/bin/macosx/tools/
+
+## For Linux OS users
+Run the codes as below to enable the required components in Linux console.
+
+
+```bash
+sudo apt-get install tcl-dev tk-dev
+sudo apt-get install r-cran-ncdf4
+sudo apt install libxml2-dev
+sudo apt install libssl-dev
+sudo apt install libcurl4-openssl-dev
+sudo apt-get install libnss-winbind winbind
+```
+
+## Example of KNIME workflow
+An example of KNIME workflow can be found at "/MassOmics/inst/KNIMEworkflow". The workflow is designed to perform intensity normalization from various up-stream software using installed MassOmics package.
+You will need to install r sever to enable the r snipts in KNIME space.
+
+```r
+install.packages("Rserve",,"http://rforge.net")
+```
+
+
+
+## Session information
+
+
+```r
+toLatex(sessionInfo())
+```
+
+```
+## \begin{itemize}\raggedright
+##   \item R version 3.6.1 (2019-07-05), \verb|x86_64-w64-mingw32|
+##   \item Locale: \verb|LC_COLLATE=English_United States.1252|, \verb|LC_CTYPE=English_United States.1252|, \verb|LC_MONETARY=English_United States.1252|, \verb|LC_NUMERIC=C|, \verb|LC_TIME=English_United States.1252|
+##   \item Running under: \verb|Windows 10 x64 (build 18362)|
+##   \item Matrix products: default
+##   \item Base packages: base, datasets, graphics, grDevices, methods,
+##     stats, utils
+##   \item Loaded via a namespace (and not attached): compiler~3.6.1,
+##     crayon~1.3.4, digest~0.6.23, evaluate~0.14, htmltools~0.4.0,
+##     knitr~1.26, magrittr~1.5, pillar~1.4.3, pkgconfig~2.0.3,
+##     Rcpp~1.0.3, rlang~0.4.2, rmarkdown~2.0, rstudioapi~0.10,
+##     stringi~1.4.3, stringr~1.4.0, tibble~2.1.3, tools~3.6.1, xfun~0.11,
+##     yaml~2.2.0
+## \end{itemize}
+```
+
+
+
+End of the tutorial, Enjoy~
+
+
+## References
+R Packages used in this project:
+
+   + rcdklibs[@rcdklibs]
+
+   + rJava[@rJava]
+
+   + data.table[@data.table]
+
+   + RColorBrewer[@RColorBrewer]
+
+   + magick[@magick]
+
+   + ggplot2[@ggplot2]
+
+   + dplyr[@dplyr]
+
+   + IRanges[@IRanges]
+
+   + tcltk[@tcltk]
+   
+   + XCMS[@xcms3]
+   
+   + mzR[@mzR2]
+
+   + doParallel[@doParallel]
+   
+   + KEGGREST[@KEGGREST]
+   
+   + randomForest[@randomForest]
+}

@@ -4,9 +4,15 @@
 \alias{SERRF}
 \title{Systematic error removal using random forest (SERRF) normalization}
 \usage{
-SERRF(input = "Area.csv", Predict_level = "QC", data = NULL,
-  datatype = c("MSDIAL", "MASSOMICS"), infopath = NULL,
-  Log_trans = F)
+SERRF(
+  input = "Area.csv",
+  Predict_level = "QC",
+  data = NULL,
+  datatype = c("MSDIAL", "MASSOMICS"),
+  infopath = NULL,
+  Log_trans = F,
+  zero_imputaion = T
+)
 }
 \arguments{
 \item{input}{locate the molecule intensities data}

@@ -4,11 +4,20 @@
 \alias{amdis_id_Summary}
 \title{AMDIS report file parsing and summary}
 \usage{
-amdis_id_Summary(workdir = NULL, MS.L = NULL, amdis.report = NULL,
-  File.name = "Summary Report.csv", MsLibrary = c("NIST", "InHouse"),
-  Ret.Time.Filter = 2.5, RT.shift.limt = 60, mz_L = 38, mz_U = 550,
-  generate_rt_shift_graph = F, generate_rt_shift_graphs = F,
-  RTcorrection = T)
+amdis_id_Summary(
+  workdir = NULL,
+  MS.L = NULL,
+  amdis.report = NULL,
+  File.name = "Summary Report.csv",
+  MsLibrary = c("NIST", "InHouse"),
+  Ret.Time.Filter = 2.5,
+  RT.shift.limt = 60,
+  mz_L = 38,
+  mz_U = 550,
+  generate_rt_shift_graph = F,
+  generate_rt_shift_graphs = F,
+  RTcorrection = F
+)
 }
 \arguments{
 \item{workdir}{locate the working Dir}

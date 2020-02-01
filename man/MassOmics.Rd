@@ -4,22 +4,23 @@
 \name{MassOmics}
 \alias{MassOmics}
 \alias{clean.fix}
-\alias{MassOmics-package}
 \title{\tabular{ll}{
 Package: \tab MassOmics \cr
 License: \tab GPL (>= 2)\cr
 URL: \tab 
 }}
 \usage{
-clean.fix(main.folder = tk_choose.dir(caption =
-  "Select working directory"),
-  amdis.report = read.csv(tk_choose.files(default =
-  "Select the AMDIS report in .TXT", multi = FALSE, caption =
-  "Select the AMDIS report in .TXT"), sep = "\\t", colClass = "character"),
+clean.fix(
+  main.folder = tk_choose.dir(caption = "Select working directory"),
+  amdis.report = read.csv(tk_choose.files(default = "Select the AMDIS report in .TXT",
+    multi = FALSE, caption = "Select the AMDIS report in .TXT"), sep = "\\t", colClass =
+    "character"),
   ion.lib = read.csv(tk_choose.files(default =
-  "Select the Idenditification report in .CSV", multi = FALSE, caption =
-  "Select the Idenditification report in .CSV"), sep = ","), save = TRUE,
-  output = "Fianl Metab result")
+    "Select the Idenditification report in .CSV", multi = FALSE, caption =
+    "Select the Idenditification report in .CSV"), sep = ","),
+  save = TRUE,
+  output = "Fianl Metab result"
+)
 }
 \description{
 \tabular{ll}{

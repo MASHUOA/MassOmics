@@ -346,7 +346,7 @@ DataCorrection <- function(){
   
   
   ################################################Batch correction######################
-  BatchCorrection <- function(funMeanMedian= "median", SampleType = "QC", datatype="original", Log_trans=F){
+  BatchCorrection <- function(funMeanMedian= "median", SampleType = "QC", datatype="original", Log_trans=F, vis_norm_result=F){
     
     ## Batch normalization ##
     
@@ -372,12 +372,13 @@ DataCorrection <- function(){
       
       
       info.df <- read.csv(info)
+      info.df <- info.df[,c("Name", "Type", "Batch")]
       info.df$Name <-make.names(info.df$Name)
       
-      merge.df <- merge(info.df, data.df1, by.x = "Name", by.y = "row.names"  , all= TRUE)
+      merge.df <- merge(info.df[,c("Name", "Type", "Batch")], data.df1, by.x = "Name", by.y = "row.names"  , all.y= TRUE)
       merge.df <- merge.df[!is.na(merge.df$Batch),]
       
-      nTrue <- length(merge.df[is.na(merge.df[,ncol(merge.df)])==TRUE])
+      nTrue <- nrow(merge.df[is.na(merge.df[,ncol(merge.df)]),])
       
       if(nTrue> 0) { tkmessageBox(message = paste("ERROR:",nTrue, "Sample names differ between spreadsheets"), icon = "warning", type = "ok"); stop("ERROR: Sample names differ")}
       
@@ -435,6 +436,8 @@ DataCorrection <- function(){
     write.csv(final.df, file=FileName , row.names = FALSE)
     
     
+    if(vis_norm_result){
+      
     if(SampleType=="QC"){
       ## Plot QC
       means.before<-apply(Data[Type=="QC",],2,mean, na.rm=T)
@@ -449,9 +452,11 @@ DataCorrection <- function(){
       plot(cv.post, cv.before, ylab='Coefficent of variation (CV) before batch correction',
            xlab='Coefficent of variation (CV) after batch correction' ,main='QC',col="red")
       abline(reg1)
+      abline(a=0,b=1, col = "lightgray", lty = 3)
+      mtext(paste("Number of imrpoved metabolites:", sum(cv.s.before > cv.s.post,na.rm = T))) 
+      
     }
     ## Plot sample
-    
     means.s.before<-apply(Data[Type=="Sample",],2,mean, na.rm=T)
     sds.s.before<-apply(Data[Type=="Sample",],2,sd, na.rm=T)
     cv.s.before<-sds.s.before/means.s.before
@@ -464,7 +469,10 @@ DataCorrection <- function(){
     plot(cv.s.post, cv.s.before, ylab='Coefficent of variation (CV) before batch correction',
          xlab='Coefficent of variation (CV) after batch correction' ,main='Samples',col="red")
     abline(reg1)
-    message(paste("Number of imrpoved metabolites:", sum(cv.s.before > cv.s.post)))
+    abline(a=0,b=1, col = "lightgray", lty = 3)
+    mtext(paste("Number of imrpoved metabolites:", sum(cv.s.before > cv.s.post,na.rm = T))) 
+    }
+
   }
   
   ## interphase for BatchCorrection
@@ -491,17 +499,23 @@ DataCorrection <- function(){
   zero_imputaion<- tclVar("1")
   tkconfigure(zero_imputaion_check,variable=zero_imputaion)
   
+  vis_norm_result_check <- tkcheckbutton(win1)
+  vis_norm_result<- tclVar("1")
+  tkconfigure(vis_norm_result_check,variable=vis_norm_result)
   ## Function
   submitC <- function() {
     zero_imputaion=tclvalue(zero_imputaion)
     if (zero_imputaion=="0"){zero_imputaion<-FALSE}
     if (zero_imputaion=="1"){zero_imputaion<-TRUE}
+    vis_norm_result=tclvalue(vis_norm_result)
+    if (vis_norm_result=="0"){vis_norm_result<-FALSE}
+    if (vis_norm_result=="1"){vis_norm_result<-TRUE}
     SampleT <- strsplit(SampleType[[as.numeric(tclvalue(tcl(comboBox1,"getvalue")))+1]],"\\+")[[1]]
     StatT <- StatType[[as.numeric(tclvalue(tcl(comboBox2,"getvalue")))+1]]
     if (StatT %in% c("median","mean")){
-      BatchCorrection(funMeanMedian= StatT , SampleType =  SampleT)
+      BatchCorrection(funMeanMedian= StatT , SampleType =  SampleT,vis_norm_result=vis_norm_result)
     }else if (StatT %in% c("SERRF")){
-      SERRF(Predict_level = SampleT,datatype="MASSOMICS",zero_imputaion=zero_imputaion)
+      SERRF(Predict_level = SampleT,datatype="MASSOMICS",zero_imputaion=zero_imputaion,vis_norm_result=vis_norm_result)
     }
     
   }
@@ -527,7 +541,7 @@ DataCorrection <- function(){
   tkgrid(tklabel(frameCorrection,text="Centralised batches based on"), comboBox1,pady= 10, padx= 10, sticky="W")
   tkgrid(tklabel(frameCorrection,text="Normalization method"),comboBox2, pady= 10, padx= 10, sticky="w")
   tkgrid(tklabel(frameCorrection,text="Perform Zero value imputation (1/2*min)"), zero_imputaion_check, sticky="w")
-
+  tkgrid(tklabel(frameCorrection,text="Check normalization result"), vis_norm_result_check, sticky="w")
   frameButtonC<- tkframe(win1$env$tb3)
   tkgrid(tklabel(frameButtonC,text=""),  submitC.but,submitd.but, open.but , pady= 10, padx= 10, sticky="w")
   
