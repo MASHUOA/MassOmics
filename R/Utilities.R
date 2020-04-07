@@ -171,12 +171,12 @@ Combine_result_file<-function(path){
   
   
   
-  rownames(p)=as.character(p[,1])
-  rownames(p)[1]="label"
+  rownames(p)=as.character(p[,which(p[1,]=="time")])
+  rownames(p)[1]="time"
   tp=as.data.frame(t(p),stringsAsFactors=F)
-  colnames(e)=as.character(p[,1])
+  colnames(e)=as.character(p[,which(p[1,]=="time")])
   finaltable<-rbind(tp,e)
-  colnames(enorm)=as.character(p[,1])
+  colnames(enorm)=as.character(p[,which(p[1,]=="time")])
   finaltablenorm<-rbind(tp,enorm)
   
   return(list(raw=finaltable,norm=finaltablenorm))

@@ -10,6 +10,7 @@ author:
 - Stephanie Andraos
 - Ting-Li Han
 output:
+  word_document: default
   html_document: 
     keep_md: yes
     toc: yes
@@ -22,7 +23,6 @@ output:
     fig_width: 10
     fig_height: 10
   pdf_document: default
-  word_document: default
   md_document:
     variant: markdown_github
 bibliography: references.bib

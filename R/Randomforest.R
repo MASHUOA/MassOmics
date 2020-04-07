@@ -175,6 +175,8 @@ readData_serrf_native = function(path =  "G:\\data\\D\\data project D.xlsx",info
   }
   
   if (is.null(pData$time)){pData$time=rownames(pData)}
+  
+  
   pData<-pData[,c("Name","Batch", "Type","time")]
   colnames(pData)=c("label","batch","sampleType","time")
   sampleID=as.data.frame(colnames(d.df))
@@ -363,7 +365,7 @@ SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MS
     
     for(i in missing_compounds){
       
-      if (zero_imputaion){
+      if (zero_imputaion & sum(is.na(e[i,]))!=ncol(is.na(e[i,]))){
       
          e[i, is.na(e[i,])] = 1/2 * min(e[i,!is.na(e[i,])]) 
       } else  {
@@ -555,7 +557,7 @@ SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MS
   if (datatype=="MASSOMICS"){
     inputmassomics<-read.csv(input)
     inputmassomics<-inputmassomics[,grep("CAS",colnames(inputmassomics)):grep("Name",colnames(inputmassomics))]
-    massomicsoupt<-merge(inputmassomics,Norm_finaltable[["norm"]],by.x="Name",by.y="label")[, union(names(inputmassomics), names(Norm_finaltable[["norm"]])[2:ncol(Norm_finaltable[["norm"]])])]
+    massomicsoupt<-merge(inputmassomics,Norm_finaltable[["norm"]],by.x="Name",by.y="time")[, union(names(inputmassomics), names(Norm_finaltable[["norm"]])[2:ncol(Norm_finaltable[["norm"]])])]
     dirname(input)
     write.table(massomicsoupt, file=paste0(dirname(input),"/Serrf_normed_as_",Predict_level,".csv"),row.names=FALSE, col.names=T, sep=",")
   }
