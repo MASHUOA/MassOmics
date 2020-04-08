@@ -903,7 +903,7 @@ the very beginning and very end.*
 
 # Miscellaneous
 ## Example data
-The MassOmics comes with a series of Maildi imaging data sets acquired from either FT-ICR or TOF. By the following codes, you can download these raw data set into a local folder.  
+The MassOmics comes with a example dataset, which is a large scale untargeted metabolomics experiment including 400 GC-MS runs. In the data folder you will find a table of the sample information. You can download these raw data set into a local folder.  
 
 
 ```r
@@ -920,7 +920,7 @@ untar('Data.tar.gz',exdir =".",  tar="tar")
 list.dirs()
 ```
 
-THe example is a large scale untargeted metabolomics dataset includes 400 GC-MS runs. In the data folder you will find a table of the sample information.
+
 
 
 ## For Mac OS users
