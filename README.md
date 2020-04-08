@@ -944,6 +944,17 @@ https://www.xquartz.org/
 + Use the following link to download and install the correct tcltk package for your OS version.
 https://cran.r-project.org/bin/macosx/tools/
 
++ Use the following steps to install BWidget 
+
+Download the package via: http://sourceforge.net/project/showfiles.php?group_id=12883
+
+once you get the archive BWidget-1.7.0.tar.gz move it to /usr/local/ 
+lib and install it with
+
+sudo mv /some_download_path/BWidget-1.7.0.tar.gz /usr/local/lib
+cd /usr/loca/lib
+sudo tar zxf BWidget-1.7.0.tar.gz
+
 ## For Linux OS users
 Run the codes as below to enable the required components in Linux console.
 
