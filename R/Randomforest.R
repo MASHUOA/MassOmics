@@ -324,12 +324,15 @@ SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MS
   # put_att_csv("info", "info.csv", info)
   
   
-  if (and(file.exists(input) ,datatype=="MSDIAL")) {
+  if ('&'(file.exists(input) ,datatype=="MSDIAL")) {
     data = readData(path=input)
-  }else  if (and(file.exists(input) ,datatype=="MASSOMICS")) {
+  }else  if ('&'(file.exists(input) ,datatype=="MASSOMICS")) {
     data = readData_serrf_native(path=input,infopath = infopath)
   }else if(!is.null(data) ){
-    data = readData(data=data)
+    if((sum(names(data)==c("e", "f", "p"))==3)){
+    data=data
+    
+  }else{data = readData(data=data)}
   
   }else{stop("Critical data input is missing!")}
   
@@ -432,7 +435,7 @@ SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MS
   # stopCluster(cl)
   # PCA
   # generate PCA plot.
-  generate_PCA = function(e, f, p, QC.index, batch, method){
+  generate_PCA = function(e, f, p, QC.index, batch, method,xylim=25){
     rownames(e)=f$label
     colnames(e)=p$label
     
@@ -441,7 +444,7 @@ SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MS
         e[i,is.na(e[i,])] = min(e[i,!is.na(e[i,])])}}
     
     sds = apply(e,1,sd,na.rm = T)
-    sd_pos = ifelse(and(sds>0 ,!is.na(sds)),T,F) 
+    sd_pos = ifelse('&'(sds>0 ,!is.na(sds)),T,F) 
     
     if (!is.null(sd_pos)){
       pca = prcomp(t(e[sd_pos,]), center = T, scale. = T)
@@ -452,13 +455,14 @@ SERRF <- function(input = "Area.csv",Predict_level="QC",data=NULL,datatype=c("MS
       batch.QC[p$sampleType=="QC"] = "QC"
       qc = rep(F, nrow(p))
       qc[p$sampleType=="QC"] = TRUE
+      xylim=ifelse(xylim>=max(abs(c(pca.data$PC1,pca.data$PC2))),xylim,max(abs(c(pca.data$PC1,pca.data$PC2))))
       PC1_PC2=ggplot(pca.data, aes(PC1, PC2, color = batch.QC,group=batch.QC, size = ifelse(qc==T,2,1), order = order)) +
         geom_point(alpha = 0.8) + scale_size(guide="none",breaks =c(1, 2),range =c(1, 2)) +
         stat_ellipse( linetype = 2, size = 0.5) +
         labs(x = paste0("PC1: ",signif(variance[1]*100,3),"%"), y = paste0("PC2: ",signif(variance[2]*100,3),"%"),
              title = method) +
-        xlim(-25, 25) +
-        ylim(-25, 25) +
+        xlim(-xylim, xylim) +
+        ylim(-xylim, xylim) +
         theme.scatter
     plot_pcs<-function(e){
       pc.df=data.frame(e,stringsAsFactors = F)
@@ -655,7 +659,7 @@ randomForest_norm_par<-function(j, data, batch, QC.index, time) {
 
 SERRF_native <- function(input = "Area.csv",Predict_level="QC",data=NULL){
   library(tcltk)
-  if (and(!file.exists(input) , is.null(data))){input =tk_choose.files(caption = "Select area.csv files to normalized by SERRF")}
+  if ('&'(!file.exists(input) , is.null(data))){input =tk_choose.files(caption = "Select area.csv files to normalized by SERRF")}
   SampleType=Predict_level
   setwd(base::dirname(input))
   # library(rgeolocate)
@@ -706,7 +710,7 @@ SERRF_native <- function(input = "Area.csv",Predict_level="QC",data=NULL){
   #
   # put_att_csv("info", "info.csv", info)
   
-  if (and(file.exists(input) , is.null(data))) {data = readData(path=input)}
+  if ('&'(file.exists(input) , is.null(data))) {data = readData(path=input)}
   
   e = data$e
   f = data$f

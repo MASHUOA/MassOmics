@@ -64,16 +64,21 @@ GCMS_integration<-function(output = "GC-MS Result",
   thread <- round(nrow(library_file_org)/200,digits = 0)
   if (thread>=6) {thread=6}
   if (thread<1) {thread=1}
+  
   for (q in 1:length(filenames)) {
     findScanTime=NULL
     res<-try(findScanTime <- xcmsRaw(filename = paste(conditions, filenames[q], sep = "/")))
     if(class(res) == "try-error"){
-     scanextract=stringr::str_extract_all(res[1],"scan.....")[[1]]
-     scanextract=gsub("scan","",scanextract)
-     scanextract=gsub(" ","",scanextract)
-     scanextract=as.numeric(scanextract)
-     res<-try(findScanTime <- xcmsRaw(filename = paste(conditions, filenames[q], sep = "/"),scanrange = 1:min(scanextract)))
-     res<-try(findScanTime <- xcmsRaw(filename = paste(conditions, filenames[q], sep = "/"),scanrange = 1:10))
+     #scanextract=stringr::str_extract_all(res[1],"scan.....")[[1]]
+     #scanextract=gsub("scan","",scanextract)
+     #scanextract=gsub(" ","",scanextract)
+     #scanextract=as.numeric(scanextract)
+     
+     filepath <- xcmsSource(paste(conditions, filenames[q], sep = "/"))
+     rawdata <- loadRaw(filepath, includeMSn = includeMSn)
+     res<-try(findScanTime <- xcmsRaw(filename = paste(conditions, filenames[q], sep = "/"),scanrange = c(1,7516)))
+     #res<-try(findScanTime <- xcmsRaw(filename = paste(conditions, filenames[q], sep = "/"),scanrange = c(1,length(rawdata$scanindex))))
+     #res<-try(findScanTime <- xcmsRaw(filename = paste(conditions, filenames[q], sep = "/"),scanrange = 1:10))
     } 
     
     
@@ -310,7 +315,7 @@ MZrange_autodetect<-function(){
     
   }
   
-  mzranges<-parLapply(cl=autoStopCluster(makeCluster(detectCores())),1:length(QCfiles),openCDFpar,QCfiles)
+  #mzranges<-parLapply(cl=autoStopCluster(makeCluster(detectCores())),1:length(QCfiles),openCDFpar,QCfiles)
   for (QCfile in QCfiles){
     findScanTime <- xcmsRaw(filename = QCfile)
     if (mz_L<=min(findScanTime@mzrange)) mz_L=min(findScanTime@mzrange)
@@ -521,7 +526,7 @@ amdis_id_Summary<-function(workdir= NULL,
     if (dir.exists(save.folder)!=T) try(dir.create (save.folder))
     
     for (component in 1:length(Remove.metabolite)){
-      if(and((RT.stats[component,2] + RT.stats[component,3]) > RT.shift.limt, T)){
+      if(`&`((RT.stats[component,2] + RT.stats[component,3]) > RT.shift.limt, T)){
         #names(Remove.metabolite)[component]
         RT_libsimilarity=NULL
         #plot figure
@@ -530,7 +535,7 @@ amdis_id_Summary<-function(workdir= NULL,
         #nbins=6
         #res <- try(RT_libsimilarity$peakgroup<-OneR::bin(RT_libsimilarity$RT,nbins = nbins,labels = c(paste("Peak",1:nbins)), method = "clusters",na.omit = T),silent = TRUE)
         #if (class(res) != "try-error"){
-        #while(and(sum(grep("Peak",RT_libsimilarity$peakgroup))==0,nbins>=1)){
+        #while(`&`(sum(grep("Peak",RT_libsimilarity$peakgroup))==0,nbins>=1)){
         #  nbins=nbins-1
         #  res <- try(RT_libsimilarity$peakgroup<-OneR::bin(RT_libsimilarity$RT,nbins = nbins,labels = c(paste("Peak",1:nbins)), method = "clusters",na.omit = T),silent = TRUE)
         #}
@@ -639,9 +644,9 @@ amdis_id_Summary<-function(workdir= NULL,
             RT_libsimilarity$peakgroup="Outliner"
             RT_libsimilarity$peakgroup_RT_median=RT_libsimilarity$RT
             for (peak in 1: nrow(AMDIS.report.RT.stats.add)){
-              RT_libsimilarity$peakgroup=ifelse(and(RT_libsimilarity$RT>=(AMDIS.report.RT.stats.add$RT.median[peak]-AMDIS.report.RT.stats.add$RT.shfit.Lower[peak]/60),
+              RT_libsimilarity$peakgroup=ifelse(`&`(RT_libsimilarity$RT>=(AMDIS.report.RT.stats.add$RT.median[peak]-AMDIS.report.RT.stats.add$RT.shfit.Lower[peak]/60),
                                                     RT_libsimilarity$RT<=(AMDIS.report.RT.stats.add$RT.median[peak]+AMDIS.report.RT.stats.add$RT.shfit.upper[peak]/60)),paste("Peak",peak),RT_libsimilarity$peakgroup)
-              RT_libsimilarity$peakgroup_RT_median=ifelse(and(RT_libsimilarity$RT>=(AMDIS.report.RT.stats.add$RT.median[peak]-AMDIS.report.RT.stats.add$RT.shfit.Lower[peak]/60),
+              RT_libsimilarity$peakgroup_RT_median=ifelse(`&`(RT_libsimilarity$RT>=(AMDIS.report.RT.stats.add$RT.median[peak]-AMDIS.report.RT.stats.add$RT.shfit.Lower[peak]/60),
                                                               RT_libsimilarity$RT<=(AMDIS.report.RT.stats.add$RT.median[peak]+AMDIS.report.RT.stats.add$RT.shfit.upper[peak]/60)),AMDIS.report.RT.stats.add$RT.median[peak],"")
             }
             names.var<- windows_filename(names(Remove.metabolite)[component])          
@@ -1057,7 +1062,7 @@ MassHunter_id_Summary<-function(workdir= NULL,
     if (dir.exists(save.folder)!=T) try(dir.create (save.folder))
     
     for (component in 1:length(Remove.metabolite)){
-      if(and((RT.stats[component,2] + RT.stats[component,3]) > RT.shift.limt, T)){
+      if(`&`((RT.stats[component,2] + RT.stats[component,3]) > RT.shift.limt, T)){
         #names(Remove.metabolite)[component]
         RT_libsimilarity=NULL
         #plot figure
@@ -1066,7 +1071,7 @@ MassHunter_id_Summary<-function(workdir= NULL,
         #nbins=6
         #res <- try(RT_libsimilarity$peakgroup<-OneR::bin(RT_libsimilarity$RT,nbins = nbins,labels = c(paste("Peak",1:nbins)), method = "clusters",na.omit = T),silent = TRUE)
         #if (class(res) != "try-error"){
-        #while(and(sum(grep("Peak",RT_libsimilarity$peakgroup))==0,nbins>=1)){
+        #while(`&`(sum(grep("Peak",RT_libsimilarity$peakgroup))==0,nbins>=1)){
         #  nbins=nbins-1
         #  res <- try(RT_libsimilarity$peakgroup<-OneR::bin(RT_libsimilarity$RT,nbins = nbins,labels = c(paste("Peak",1:nbins)), method = "clusters",na.omit = T),silent = TRUE)
         #}
@@ -1175,9 +1180,9 @@ MassHunter_id_Summary<-function(workdir= NULL,
           RT_libsimilarity$peakgroup="Outliner"
           RT_libsimilarity$peakgroup_RT_median=RT_libsimilarity$RT
           for (peak in 1: nrow(MassHunter.report.RT.stats.add)){
-            RT_libsimilarity$peakgroup=ifelse(and(RT_libsimilarity$RT>=(MassHunter.report.RT.stats.add$RT.median[peak]-MassHunter.report.RT.stats.add$RT.shfit.Lower[peak]/60),
+            RT_libsimilarity$peakgroup=ifelse(`&`(RT_libsimilarity$RT>=(MassHunter.report.RT.stats.add$RT.median[peak]-MassHunter.report.RT.stats.add$RT.shfit.Lower[peak]/60),
                                                   RT_libsimilarity$RT<=(MassHunter.report.RT.stats.add$RT.median[peak]+MassHunter.report.RT.stats.add$RT.shfit.upper[peak]/60)),paste("Peak",peak),RT_libsimilarity$peakgroup)
-            RT_libsimilarity$peakgroup_RT_median=ifelse(and(RT_libsimilarity$RT>=(MassHunter.report.RT.stats.add$RT.median[peak]-MassHunter.report.RT.stats.add$RT.shfit.Lower[peak]/60),
+            RT_libsimilarity$peakgroup_RT_median=ifelse(`&`(RT_libsimilarity$RT>=(MassHunter.report.RT.stats.add$RT.median[peak]-MassHunter.report.RT.stats.add$RT.shfit.Lower[peak]/60),
                                                             RT_libsimilarity$RT<=(MassHunter.report.RT.stats.add$RT.median[peak]+MassHunter.report.RT.stats.add$RT.shfit.upper[peak]/60)),MassHunter.report.RT.stats.add$RT.median[peak],"")
           }
           names.var<- windows_filename(names(Remove.metabolite)[component])          
@@ -1859,4 +1864,76 @@ erah_pipeline<-function(workdir=getwd(),infopath=NULL){
     
   
   
+}
+
+xcmsRaw_dev<-function (filename, profstep = 1, profmethod = "bin", profparam = list(), 
+          includeMSn = FALSE, mslevel = NULL, scanrange = NULL) 
+{
+  object <- new("xcmsRaw")
+  object@env <- new.env(parent = .GlobalEnv)
+  object@filepath <- xcmsSource(filename)
+  rawdata <- loadRaw(object@filepath, includeMSn = includeMSn)
+  rtdiff <- diff(rawdata$rt)
+  if (any(rtdiff == 0)) 
+    warning("There are identical scantimes.")
+  if (any(rtdiff < 0)) {
+    badtimes <- which(rtdiff < 0)
+    stop(paste("Time for scan ", badtimes[1], " (", 
+               rawdata$rt[[badtimes[1]]], ") greater than scan ", 
+               badtimes[1] + 1, " (", rawdata$rt[[badtimes[1] + 
+                                                    1]], ")", sep = ""))
+  }
+  object@scantime <- rawdata$rt
+  object@tic <- rawdata$tic
+  object@scanindex <- rawdata$scanindex
+  object@env$mz <- rawdata$mz
+  object@env$intensity <- rawdata$intensity
+  if (length(scanrange) < 2) {
+    scanrange <- c(1, length(object@scantime))
+  }else {
+    scanrange <- range(scanrange)
+  }
+  if (min(scanrange) < 1 | max(scanrange) > length(object@scantime)) {
+    scanrange[1] <- max(1, scanrange[1])
+    scanrange[2] <- min(length(object@scantime), scanrange[2])
+    message("Provided scanrange was adjusted to ", 
+            scanrange[1], " - ", scanrange[2])
+  }
+  if (!is.null(rawdata$acquisitionNum)) {
+    object@acquisitionNum <- rawdata$acquisitionNum
+  }
+  if (!is.null(rawdata$polarity)) {
+    object@polarity <- factor(rawdata$polarity, levels = c(0, 
+                                                           1, -1), labels = c("negative", "positive", 
+                                                                              "unknown"))
+  }
+  if (!is.null(rawdata$MSn)) {
+    object@env$msnMz <- rawdata$MSn$mz
+    object@env$msnIntensity <- rawdata$MSn$intensity
+    object@msnScanindex <- rawdata$MSn$scanindex
+    object@msnAcquisitionNum <- rawdata$MSn$acquisitionNum
+    object@msnLevel <- rawdata$MSn$msLevel
+    object@msnRt <- rawdata$MSn$rt
+    object@msnPrecursorScan <- match(rawdata$MSn$precursorNum, 
+                                     object@acquisitionNum)
+    object@msnPrecursorMz <- rawdata$MSn$precursorMZ
+    object@msnPrecursorIntensity <- rawdata$MSn$precursorIntensity
+    object@msnPrecursorCharge <- rawdata$MSn$precursorCharge
+    object@msnCollisionEnergy <- rawdata$MSn$collisionEnergy
+  }
+  xcms:::scanrange(object) <- as.numeric(scanrange)
+  object <- object[scanrange[1]:scanrange[2]]
+  xcms:::mslevel(object) <- as.numeric(mslevel)
+  object@mzrange <- range(object@env$mz, na.rm = TRUE)
+  object@profmethod <- profmethod
+  object@profparam <- profparam
+  if (profstep) 
+    xcms:::profStep(object) <- profstep
+  if (!missing(mslevel) & !is.null(mslevel)) {
+    if (max(mslevel) > 1) {
+      object <- msn2ms(object)
+      object <- split(object, f = object@msnLevel == mslevel)$"TRUE"
+    }
+  }
+  return(object)
 }

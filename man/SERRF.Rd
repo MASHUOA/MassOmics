@@ -11,7 +11,8 @@ SERRF(
   datatype = c("MSDIAL", "MASSOMICS"),
   infopath = NULL,
   Log_trans = F,
-  zero_imputaion = T
+  zero_imputaion = T,
+  vis_norm_result = F
 )
 }
 \arguments{

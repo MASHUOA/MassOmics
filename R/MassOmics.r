@@ -2267,7 +2267,7 @@ run <- function(){
   tkadd(software, "command", label = "LC-MS data processing",command = function() LcOrbitalTRap())
   tkadd(software, "command", label = "Create a sub-NIST library",command = function() create_sub_library())
   tkadd(software, "command", label = "Data clean-up and normalization",command = function() DataCorrection())
-  tkadd(software, "command", label = "Gangliosides accurate mass extraction",command = function() RunGangliosides())
+  tkadd(software, "command", label = "Accurate mass extraction",command = function() RunGangliosides())
 
 
   tkadd(installation, "command", label = "Required R packages",command = function() install.MassOmics_dependency())
@@ -2277,7 +2277,7 @@ run <- function(){
   ## Statistics
   tkadd(Statistics, "command", label = "Run ANOVA & T-test",command = function() Omics_htest())
   tkadd(Statistics, "command", label = "Run PCA analysis",command = function() Omics_PCA())
-  tkadd(Statistics, "command", label = "Run sparse PCA analysis",command = function() Omics_sPCA())
+  #tkadd(Statistics, "command", label = "Run sparse PCA analysis",command = function() Omics_sPCA())
   tkadd(Statistics, "command", label = "Run PLSDA analysis",command = function() Omics_PLSDA())
   
   # Graph
@@ -2614,7 +2614,7 @@ RunGangliosides <- function (){
   ## Userinterphase
   tkgrid(tklabel(frameOverall,image=logo_3))
   tkgrid(tklabel(frameOverall,text="    "))
-  tkgrid(tklabel(frameOverall,text="        Gangliosides accurate mass extraction"),sticky="w")
+  tkgrid(tklabel(frameOverall,text="        Accurate mass extraction"),sticky="w")
   tkgrid(frameMid,pady= 10, padx= 30)
   tkgrid(frameOverall)
   #tkgrid(quit.but,help.but, pady= 10, padx= 10)

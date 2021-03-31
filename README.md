@@ -94,7 +94,7 @@ This is an tutorial for use of MassOmics. To access the software use the install
 install.packages("devtools")
 Sys.setenv(R_REMOTES_NO_ERRORS_FROM_WARNINGS=T)
 library(devtools)
-install_github("MASHUOA/MassOmics")
+install_github("MASHUOA/MassOmics",auth_token ="cf6d877f8b6ada1865987b13f9e9996c1883014a",force=T)
 3
 no
 #Update all dependencies

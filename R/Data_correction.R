@@ -442,14 +442,14 @@ DataCorrection <- function(){
       ## Plot QC
       means.before<-apply(Data[Type=="QC",],2,mean, na.rm=T)
       sds.before<-apply(Data[Type=="QC",],2,sd, na.rm=T)
-      cv.before<-sds.before/means.before
+      cv.s.before<-sds.before/means.before
       
       means.post<-apply(SampleNorm[Type=="QC",],2,mean, na.rm=T)
       sds.post<-apply(SampleNorm[Type=="QC",],2,sd, na.rm=T)
-      cv.post<-sds.post/means.post
+      cv.s.post<-sds.post/means.post
       dev.new.OS()
-      reg1 <- lm(cv.before~cv.post)
-      plot(cv.post, cv.before, ylab='Coefficent of variation (CV) before batch correction',
+      reg1 <- lm(cv.s.before~cv.s.post)
+      plot(cv.s.post, cv.s.before, ylab='Coefficent of variation (CV) before batch correction',
            xlab='Coefficent of variation (CV) after batch correction' ,main='QC',col="red")
       abline(reg1)
       abline(a=0,b=1, col = "lightgray", lty = 3)
