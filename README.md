@@ -2,6 +2,7 @@ MassOmics
 ================
 
 An R package of untargeted metabolomics Batch processing using the NIST Mass Spectral Library
+ 
 Author: Guangyu GUO, Elizabeth J. McKenzie, M. Beatrix Jones, Megan Friesen, Erica Zarate, Stephanie Andraos, Ting-Li Han
 
 * [Abstract:](#Abstract)
