@@ -1,15 +1,10 @@
-title: "MassOmics"
-subtitle: "An R package of untargeted metabolomics Batch processing using the NIST Mass Spectral Library"
-author:
-- Guangyu GUO
-- Elizabeth J. McKenzie
-- M. Beatrix Jones
-- Megan Friesen
-- Erica Zarate
-- Stephanie Andraos
-- Ting-Li Han
+MassOmics
+================
 
-* [abstract:](#abstract)
+An R package of untargeted metabolomics Batch processing using the NIST Mass Spectral Library
+Author: Guangyu GUO, Elizabeth J. McKenzie, M. Beatrix Jones, Megan Friesen, Erica Zarate, Stephanie Andraos, Ting-Li Han
+
+* [Abstract:](#Abstract)
 * [Package installation](#package-installation)
 * [Preprocessing](#preprocessing)
    * [Accessing the software](#accessing-the-software)
