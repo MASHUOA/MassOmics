@@ -16,7 +16,7 @@ Encoding: UTF-8
 Imports: 
     tcltk,tcltk2,Rcpp,openxlsx,tidyr,randomForest,rfviz,ggpubr,extrafont,xcms,svDialogs,reticulate,
     svGUI,KEGGREST,RColorBrewer,rgl,mixOmics,plyr,flux,tkrplot,multtest,XML,checkmate,pbapply,
-    CAMERA,qvalue,doParallel,BiocManager,pacman,backports,BiocParallel,zip,PAPi,stringdist,OneR,pander,uuid,
+    CAMERA,qvalue,doParallel,BiocManager,pacman,backports,BiocParallel,zip,stringdist,OneR,pander,uuid,
     officer,systemfonts,gdtools,rvg,impute,faahKO,vctrs
 Suggests: 
     covr,
