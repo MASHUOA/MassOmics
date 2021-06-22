@@ -32,7 +32,7 @@ GCMS_integration<-function(output = "GC-MS Result",
   require(Rcpp)
   require(data.table)
   setwd(workdir)
-  final.check.data <- read.csv(tcltk::tk_choose.files(caption = "Load a Summary Report.csv",  multi = FALSE),stringsAsFactors=FALSE)
+  final.check.data <- read.csv(paste0(tcltk::tk_choose.files(caption = "Load a Summary Report.csv",  multi = FALSE),collapse = " "),stringsAsFactors=FALSE)
   
   final.check.data <- final.check.data[final.check.data$Total.ID!=0,]
   check.Ref.ion <-table(is.na(final.check.data$Ref.ion))["TRUE"]
@@ -67,7 +67,7 @@ GCMS_integration<-function(output = "GC-MS Result",
   
   for (q in 1:length(filenames)) {
     findScanTime=NULL
-    res<-try(findScanTime <- xcmsRaw(filename = paste(conditions, filenames[q], sep = "/")))
+    res<-try(findScanTime <- xcmsRaw(filename = paste(conditions, filenames[q], sep = "/"),))
     if(class(res) == "try-error"){
      #scanextract=stringr::str_extract_all(res[1],"scan.....")[[1]]
      #scanextract=gsub("scan","",scanextract)
@@ -75,8 +75,10 @@ GCMS_integration<-function(output = "GC-MS Result",
      #scanextract=as.numeric(scanextract)
      
      filepath <- xcmsSource(paste(conditions, filenames[q], sep = "/"))
-     rawdata <- loadRaw(filepath, includeMSn = includeMSn)
-     res<-try(findScanTime <- xcmsRaw(filename = paste(conditions, filenames[q], sep = "/"),scanrange = c(1,7516)))
+     rawdata <- loadRaw(filepath, includeMSn = F)
+     mzrange_file<-range(rawdata$mz,na.rm = T)
+     scanrange_file<-max(which((min(which(is.na(rawdata$mz)))>=rawdata$scanindex)))-1
+     res<-try(findScanTime <- xcmsRaw(filename = paste(conditions, filenames[q], sep = "/"),scanrange = c(1,scanrange_file)))
      #res<-try(findScanTime <- xcmsRaw(filename = paste(conditions, filenames[q], sep = "/"),scanrange = c(1,length(rawdata$scanindex))))
      #res<-try(findScanTime <- xcmsRaw(filename = paste(conditions, filenames[q], sep = "/"),scanrange = 1:10))
     } 
