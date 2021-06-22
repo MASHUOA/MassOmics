@@ -22,13 +22,6 @@ clean.fix(
   output = "Fianl Metab result"
 )
 }
-\description{
-\tabular{ll}{
-Package: \tab MassOmics \cr
-License: \tab GPL (>= 2)\cr
-URL: \tab 
-}
-}
 \references{
 TBD
 }

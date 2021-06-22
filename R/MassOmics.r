@@ -11,35 +11,9 @@
 #' @keywords package
 #' @import tcltk
 #' @import tcltk2
-#' @import Rcpp
-#' @import openxlsx
-#' @import randomForest
-#' @import rfviz
-#' @import ggpubr
-#' @import extrafont
-#' @import xcms
-#' @import svDialogs
-#' @import svGUI
-#' @import KEGGREST
-#' @import RColorBrewer
-#' @import rgl
-#' @import mixOmics
-#' @import flux
-#' @import tkrplot
-#' @import multtest
-#' @import XML
-#' @import CAMERA
-#' @import qvalue
-#' @import doParallel
 #' @import BiocManager
 #' @import pacman
-#' @import backports
 #' @import BiocParallel
-#' @import pbapply
-#' @import checkmate
-#' @import zip
-#' @import PAPi
-#' @import stringdist
 #' @import pander
 #' @importFrom stats na.omit runif
 #' @importFrom utils download.file modifyList packageVersion read.table tail
