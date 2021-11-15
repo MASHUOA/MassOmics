@@ -370,7 +370,6 @@ DataCorrection <- function(){
         data.df1[(data.df1==-Inf)] <- 0
       }
       
-      
       info.df <- read.csv(info)
       info.df <- info.df[,c("Name", "Type", "Batch")]
       info.df$Name <-make.names(info.df$Name)

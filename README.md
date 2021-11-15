@@ -2,8 +2,8 @@ MassOmics
 ================
 
 An R package of untargeted metabolomics Batch processing using the NIST Mass Spectral Library
- 
-Author: Guangyu GUO, Elizabeth J. McKenzie, M. Beatrix Jones, Megan Friesen, Erica Zarate, Stephanie Andraos, Ting-Li Han
+
+Author: George GUO, Elizabeth J. McKenzie, M. Beatrix Jones, Megan Friesen, Erica Zarate, Stephanie Andraos, Ting-Li Han
 
 * [Abstract:](#Abstract)
 * [Package installation](#package-installation)
@@ -39,7 +39,7 @@ Author: Guangyu GUO, Elizabeth J. McKenzie, M. Beatrix Jones, Megan Friesen, Eri
    * [Example of KNIME workflow](#example-of-knime-workflow)
    * [Session information](#session-information)
    * [References](#references)
-   
+
 [![DOI](https://zenodo.org/badge/193418922.svg)](https://zenodo.org/badge/latestdoi/193418922)
 
 # Abstract:
@@ -97,7 +97,7 @@ Elizabeth revised them in 2014, Erica Zarate added some additional
 material in 2015, and Elizabeth updated and expanded them in 2016.
 Stephanie Andraos added images and clarifications in 2017.
 
-In 2018, George Guangyu GUO became the maintainer of this package. He
+In 2018, George GUO became the maintainer of this package. He
 has added machine learning-powered batch effect removal functions,
 refined the processing pipeline and R package build.
 

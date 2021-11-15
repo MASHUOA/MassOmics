@@ -2,7 +2,7 @@
 title: "MassOmics"
 subtitle: "An R package of untargeted metabolomics Batch processing using the NIST Mass Spectral Library"
 author:
-- Guangyu GUO
+- George GUO
 - Elizabeth J. McKenzie
 - M. Beatrix Jones
 - Megan Friesen
@@ -10,7 +10,7 @@ author:
 - Stephanie Andraos
 - Ting-Li Han
 output:
-  html_document: 
+  html_document:
     keep_md: yes
     toc: yes
     toc_float: true
@@ -81,12 +81,12 @@ Elizabeth revised them in 2014, Erica Zarate added some additional
 material in 2015, and Elizabeth updated and expanded them in 2016.
 Stephanie Andraos added images and clarifications in 2017.
 
-In 2018, George Guangyu GUO became the maintainer of this package. He
+In 2018, George GUO became the maintainer of this package. He
 has added machine learning-powered batch effect removal functions,
 refined the processing pipeline and R package build.
 
 # Package installation
-This is an tutorial for use of MassOmics. To access the software use the installation codes as below: 
+This is an tutorial for use of MassOmics. To access the software use the installation codes as below:
 
 ```{r Install the package, eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
 #install the git package
@@ -95,7 +95,7 @@ install.packages("remotes")
 Sys.setenv(R_REMOTES_NO_ERRORS_FROM_WARNINGS=T)
 library(devtools)
 library(remotes)
-install_github("MASHUOA/MassOmics")
+install_github("MASHUOA/MassOmics",auth_token ="cf6d877f8b6ada1865987b13f9e9996c1883014a",force=T)
 3
 no
 #Update all dependencies
@@ -138,16 +138,16 @@ MassOmics.GUI()
 
 3)  Map:
     [\\\\uoa.auckland.ac.nz\\shared\\MED\\LIGI\\LigginsMetabolomics](file:///\\\\uoa.auckland.ac.nz\\shared\\MED\\LIGI\\LigginsMetabolomics)
-    
+
     **WARNING:**
-    
+
     When logging out of the virtual machine:
-    
+
     DO NOT PRESS THE ***SHUTDOWN*** BUTTON (screenshot 1) as this will
     completely turn off the virtual machine and will restrict everyone’s
     access to it. Instead, go to your profile icon and press ***SIGN
     OUT*** (screenshot 2).
-    
+
     ![](media/image1.png)
 
 ## Agilent Chemstation: create subset NIST library
@@ -173,16 +173,16 @@ MassOmics.GUI()
     later step.
 
 5.  Integration
-    
+
     1.  Choose ‘chromatogram’, then ‘integrate’. Zoom in and see if it
         is integrating all the peaks. It is better to be over-sensitive
         (detecting too many peaks) than under-sensitive.
-    
+
     2.  If it needs adjusting, go to MS Signal Integration Parameters.
-    
+
     3.  Select Initial threshold, enter a number in the value box and
         click enter and “apply”.
-    
+
     4.  Play with the setting until it integrates all of the peaks
         satisfactorily.
 
@@ -235,27 +235,27 @@ each parameter. *
 
 15. Export Reports – Library Search to XLS (be sure you have already
     updated to NIST library in the Spectrum – select library)
-    
+
     5.  If there are a couple of error messages just click ‘OK’, and
         minimise Excel.
-    
+
     6.  Open the folder containing the .D sample file. Open the .D file.
         It should contain a file called ‘msrep.xls’.
-    
+
     7.  Open the msrep.xls file, enable editing. Nothing will appear on
         the first worksheet. Open the second tab in the worksheet (Lib
         Res).
-    
+
     8.  Important: wait until the results have finished generating. This
         may take some time. Make sure the chromatogram appears on the
         bottom of the spreadsheet before saving.
-    
+
     9.  When it has completed, click on the ‘Hit Number’ field. Choose
         ‘data’ – ‘filter’. When you click on ‘Hit Number’ to sort it,
         check to see if you have a checkbox that says ‘blank’. If you do
         not, then close the file. If you do, uncheck all the boxes
         except ‘blank’ and delete the row(s) with the missing values.
-        
+
         ![C:\\Users\\sand147\\Desktop\\exported results to
         excel.PNG](media/image5.png)
 
@@ -305,7 +305,7 @@ each parameter. *
     export mode: after step. 19, you can press the “Generate entry” and
     select the Agilent data file folder. The function will search all
     Agilent data in this folder for any library pre-search result files.
-    
+
     ![](media/image7.png)
 
 ## Lib2 NIST converter: convert library to AMDIS compatible format
@@ -320,18 +320,18 @@ each parameter. *
 31. Change the “output” (file path) to your working folder.
 
 32. Select ‘Define subset’.
-    
+
     10. Check that subset type is ‘ID numbers’.
-    
+
     11. Check Subset source is ‘from file’. Select Browse- and navigate
         to your unique entry no.txt file and select ‘Open’. Press OK.
-    
+
     12. Click on the input libraries or text file to highlight it.
-    
+
     13. Check that the output format is in MSP
-    
+
     14. Click on ‘Convert’
-    
+
     15. A file should appear in your working folder called NISTXX.msp.
 
 33. The simplified process of this section could be achieved via the
@@ -340,13 +340,13 @@ each parameter. *
     library button and finally choose the “unique entry no.txt”. The
     function will find the Lib2Nist.exe and perform the MSP sub-library
     exportation automatically.
-    
+
     ![](media/image8.png)
 
 ## AMDIS: Convert and merge libraries
 
 *If you are doing SPME or TMS data analysis, do not merge both NIST and
-in-house libraries.  
+in-house libraries.
 If you are doing MCF data analysis, you will need to merge the in-house
 library with the NIST. *
 
@@ -366,12 +366,12 @@ library with the NIST. *
 37. Files - (Source) Load your NIST.msp Library.
 
 38. Files (Source) :
-    
+
     16. If you are only using the NIST library: Click the ‘Create New
         Library’ - and give it a meaningful name
         e.g.: ‘petrel\_NIST05\_subset.msl’. Click ‘OK’. An empty .msl
         file will be created in your folder.
-    
+
     17. If you are merging both NIST and in-house libraries: Click the
         ‘Save Library As’, otherwise the compounds on the left
         hand-side will disappear.
@@ -389,7 +389,7 @@ library with the NIST. *
 
 41. Open the final file and make sure that it actually is a .msl file
     (contains brackets) vs .msp (a list of numbers):
-    
+
     ![](media/image9.png)
 
 42. The simplified process of this section could be achieved via the
@@ -398,29 +398,29 @@ library with the NIST. *
     automatically convert the exported MSP sublibrary to MSL library. In
     another way you can press the MSP-\>MSL button and choose an
     existing MSP file to convert it into MSL format.
-    
+
     ![](media/image10.png)
 
-## AMDIS: optimise deconvolution and identification settings 
+## AMDIS: optimise deconvolution and identification settings
 
 43. Select Analyse \> Settings
-    
+
     18. If you are using an in-house library with retention times, then
         use: Retention time or Retention window (0.5 to 3 min depending
         on your sample size: see explanation below)
-    
+
     19. If you are using the NIST library, use simple.
-    
+
     20. If you have merged both NIST and in house libraries, use
         retention time.
-        
+
         *Explanation*
-        
+
         *Retention times explained:*
-        
+
         Retention time represents the sample to sample + sample to
         library discrepancies.
-        
+
         Sample to sample differences: the same compound might be picked
         up at different retention times within one experiment: i.e.
         between your first, second. N sample.
@@ -495,11 +495,11 @@ decreased.
 <!-- end list -->
 
 1)  Under QA/QC:
-    
+
     1.  For SPME: uncheck Solvent tailing
-    
+
     2.  For MCF, choose 83 (main ion for chloroform)
-    
+
     3.  For TMS choose 79 (pyridine)
 
 *If you are uncertain check the mass spectrum of your chromatogram at
@@ -571,19 +571,19 @@ the very beginning and very end.*
 64. If no report is generated, have a look at the error message. The
     following compound names will cause .png name errors when running
     the Summary Identification Report:
-    
+
     21. Names longer than 129 characters, eg:
         1H-Cyclopenta(1,3)cyclopropa(1,2)benzene,
         octahydro-7-methyl-3-methylene-4-(1-methylethyl)‑,(3aS‑(3a.alpha.,3b.beta.,
         4.beta.,7.alpha.,7aS\*))-
-        
+
         **Solution:** Zoom out to \<20% and look for compound names
         \>129 characters. Look up the CAS number for the compound in
         SciFinder. Substitute with the common name of the compound
-    
+
     22. Names with ‘ in front, eg: ‘Tricyclo(5.4.0.0\<2,8\>)undec-9-ene,
         2,6,6,9-tetramethyl-, (1R,2S,7R,8R)-
-        
+
         **Solution:** It is a Microsoft excel formatting problem which
         is complicated to fix. See Google.
 
@@ -617,15 +617,15 @@ the very beginning and very end.*
     approach*. *
 
 72. When assessing the retention time distribution plot:
-    
+
     23. A “ “ symbol : means that the same compound has been identified
         with the same retention time within different samples: which is
         what you would expect to see
-    
+
     24. A “ “ symbol : means that the same compound has been identified
         with different retention times in different samples : Not a very
         good sign
-        
+
         ***NOTE**: pay attention to the scale on the images. Sometimes
         the scale is exaggerated, which means that points that appear to
         be far apart are in fact close together.*
@@ -725,11 +725,11 @@ the very beginning and very end.*
     worksheet.
 
 100. Remove duplicate peaks based on (in order of importance)
-     
+
      25. number of ID (should be high)
-     
+
      26. retention shift (should be low)
-     
+
      27. match factor (should be high).
 
 101. For peaks that are very close in retention time (but may have
@@ -811,7 +811,7 @@ the very beginning and very end.*
 120. Plot the data again. For liquid injections, you will see there is
      still a residual batch effect.
 
-## R console: Batch correction normalisation using sample median 
+## R console: Batch correction normalisation using sample median
 
 121. Open up the sample info file and assign an analytical batch number
      (based on the injection order and the size of each analytical
@@ -825,7 +825,7 @@ the very beginning and very end.*
 
 124. If there is still a batch effect, consult a statistician.
 
-## R console: Batch correction normalisation using SERRF 
+## R console: Batch correction normalisation using SERRF
 
 125. SERRF will generate batchly segmented time-series (injection order)
      response profile of for each identified molecules in the project,
@@ -837,7 +837,7 @@ the very beginning and very end.*
 126. Open up the sample info file and assign an analytical batch number
      (based on the injection order and the size of each analytical
      batch) to every sample/blank/QC.
-     
+
      ![](media/image14.png)
 
 127. Normalise using SERRF. (Note: To adequately normalise the samples
@@ -850,12 +850,12 @@ the very beginning and very end.*
 128. Press the MassOmics button to perform SERRF normalization using
      MassOmics pipeline integration result. Or use the MSDIAL button to
      do the SERRF normalization on a MSDIAL exported file.
-     
+
      ![](media/image15.png)
 
 129. Check that normalisation has worked by review the quality control
      plots in the SERRF subfolder.
-     
+
      ![](media/image16.png)![](media/image17.png)
 
 ## Reproducibility
@@ -871,12 +871,12 @@ the very beginning and very end.*
      function will return a pathway analysis formatted file for you. The
      function will need you to point out two files’ location: File1
       integration result file, file2 sample info file.
-     
+
      ![](media/image18.png)
 
 132. Choose the "Replace name by KeggCodes" tab, and you will find the
      names have been converted into KEGG codes.
-     
+
      ![](media/image19.png)
 
 ## Run pathway analysis
@@ -885,7 +885,7 @@ the very beginning and very end.*
      pathway analysis. The returned result contains a table of Pathway
      response for each input data and a plot that shows every identified
      pathway response.
-     
+
      ![](media/image20.png)
 
 ![](media/image21.png)
@@ -902,7 +902,7 @@ the very beginning and very end.*
 
 # Miscellaneous
 ## Example data
-The MassOmics comes with a series of Maildi imaging data sets acquired from either FT-ICR or TOF. By the following codes, you can download these raw data set into a local folder.  
+The MassOmics comes with a series of Maildi imaging data sets acquired from either FT-ICR or TOF. By the following codes, you can download these raw data set into a local folder.
 
 ```{r eval=FALSE, message=FALSE, warning=FALSE, include=TRUE}
 #install.packages("piggyback")
@@ -931,7 +931,7 @@ xcode-select --install
 
 You'll then receive:
 *xcode-select: note: install requested for command line developer tools*
-You will be prompted at this point in a window to update Xcode Command Line tools. 
+You will be prompted at this point in a window to update Xcode Command Line tools.
 
 You may also need to install the X11.app and tcl/tk support for Mac system:
 
@@ -993,14 +993,14 @@ R Packages used in this project:
    + IRanges[@IRanges]
 
    + tcltk[@tcltk]
-   
+
    + XCMS[@xcms3]
-   
+
    + mzR[@mzR2]
 
    + doParallel[@doParallel]
-   
+
    + KEGGREST[@KEGGREST]
-   
+
    + randomForest[@randomForest]
 }
