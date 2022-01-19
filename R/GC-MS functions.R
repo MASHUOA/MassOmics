@@ -713,8 +713,8 @@ amdis_id_Summary<-function(workdir= NULL,
     
     # Generate summary report
     AMDIS.report<-amdis.report
-    AMDIS.report<-AMDIS.report[AMDIS.report$RT-AMDIS.report$Expec..RT < Ret.Time.Filter,]
-    AMDIS.report<-AMDIS.report[AMDIS.report$RT-AMDIS.report$Expec..RT > -Ret.Time.Filter,]
+    AMDIS.report<-AMDIS.report[AMDIS.report$RT-AMDIS.report$`Expec. RT` < Ret.Time.Filter,]
+    AMDIS.report<-AMDIS.report[AMDIS.report$RT-AMDIS.report$`Expec. RT`> -Ret.Time.Filter,]
     AMDIS.report$Name <- gsub("?", "", AMDIS.report$Name, fixed = TRUE)
     AMDIS.report$Name <- gsub("^ ", "", AMDIS.report$Name, perl=T)
     AMDIS.report$Name <- gsub("[*:%^!*?&;$]", "", AMDIS.report$Name, perl=T)
