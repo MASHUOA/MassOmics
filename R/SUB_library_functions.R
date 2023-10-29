@@ -1159,7 +1159,7 @@ ChemstationLibraryEntry<-function(workdir=NULL,rootdir=dirname(workdir)){
   
   processDF <- function(infile.df){
     toProcess.df <- infile.df
-    
+    if(is.null(toProcess.df)) return(c())
     compound.data = c()
     for(i in 1:nrow(toProcess.df)){
       # if first compound of set, copy data

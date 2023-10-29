@@ -858,6 +858,282 @@ amdis_id_Summary<-function(workdir= NULL,
   }
 }
 
+#' mgf report file parsing and summary
+#'
+#' This is a function to process the AMDIS_report.txt file. specify a in-house library or a subset of NIST library to find the most intense quantification ion within the GC-MS experiment m/z range. The script will invoke selection windows to let the user specify the files location.  
+#'
+#' @param workdir locate the working Dir
+#' @param MS.L specify the library file
+#' @param MsLibrary specify the library file origin, could be "NIST" or "InHouse"
+#' @param amdis.report specify the identification report file
+#' @param Ret.Time.Filter set the retetion time filter window around the expected retention time (in +/-min).
+#' @param RT.shift.limt set a threshole in seconds to define a molecule have 
+#' @param mz_L lower mz limit for quantification ion selection
+#' @param mz_U upper mz limit for quantification ion selection
+#' @param generate_rt_shift_graph Set TRUE to generate the retetion time shift plots for each molecules that have retention time discrepencies greater than the \code{"RT.shift.limt"}
+#' @param RTcorrection Set TRUE to enable a retention time correction before multiple peaks resolving
+#' @return None
+#'
+#' @examples
+#' mgf_id_Summary()
+#'
+#' @export
+mgf_id_Summary<-function(workdir= getwd(),
+                         mgf.report = NULL,mgf.peak.rds = NULL,
+                           Ret.Time.Filter=2.5,
+                           RT.shift.limt = 30,
+                           generate_rt_shift_graph=T,
+                           generate_rt_shift_graphs=F
+){
+  library("tcltk")
+  library("tcltk2")
+  # require("Metab")
+  library("pander")
+  library("parallel")
+  #library("OneR")
+  library("dplyr")
+  library("ggplot2")
+  library("ggpubr")
+  library(stringr)
+  #workdir <- workdir
+  if (is.null(workdir)){workdir= tk_choose.dir(caption = "Select working directory")}
+  setwd(workdir) 
+  if (is.null(mgf.report) ){
+    mgf.report = tk_choose.files(default = "Select the mgf report",
+                                                            multi = T, caption = "Select the mgf report in .mgf",
+                                                            filter=matrix(c("MGF", ".mgf", "All files", "*"),2, 2, byrow = TRUE))
+    peaks_list<-NULL
+    for (mgf_file in mgf.report){
+      lib.txt<-readLines(mgf_file)
+      lib.txt1<-lib.txt[-grep("\\t",lib.txt)]
+      att.nms<-unique(sapply(strsplit(lib.txt1[grep("=",lib.txt1)],"="),function(x) x[1]))
+      entry.nms<-sapply(strsplit(lib.txt1[grep("TITLE=",lib.txt1)],"TITLE="), function(x) x[2])
+      rez<-matrix(NA, nrow=length(entry.nms), ncol=length(att.nms), dimnames=list(NULL,att.nms ))
+      
+      starts<-grep("TITLE=", lib.txt)
+      stops<-c(starts[1:(length(starts)-1)]+diff(starts)-1,length(lib.txt))
+      for (i in 1:length(starts)){
+        tmp<-lib.txt[starts[i]:stops[i]]
+        sapply(strsplit(tmp[grep("=",tmp)],"="), function(x) rez[i,x[1]]<<-x[2])
+      }
+      rez<-as.data.frame(rez)
+      rez$file<-stringr::str_remove(basename(mgf_file),".mgf")
+      rez->peaks_list[[stringr::str_remove(basename(mgf_file),".mgf")]]
+    }
+    peaks_list_bind<-as.data.frame(do.call(rbind,peaks_list))
+    peaks_list_bind$RT<-as.numeric(peaks_list_bind$RTINMINUTES)
+    peaks_list_bind$Name<-peaks_list_bind$TITLE<-str_to_title(peaks_list_bind$TITLE)
+  } else if(!is.null(mgf.peak.rds)) {
+    peaks_list_raw<-readRDS(mgf.peak.rds)
+    lapply(names(peaks_list_raw),function(x,peaks_list_raw){
+      peaks_list_raw[[x]]->rez
+      rez<-as.data.frame(rez)
+      rez$file<-stringr::str_remove(basename(mgf_file),".mgf")
+    })->peaks_list
+      
+    peaks_list_bind<-as.data.frame(do.call(rbind,peaks_list))
+    peaks_list_bind$RT<-as.numeric(peaks_list_bind$RTINMINUTES)
+    peaks_list_bind$Name<-peaks_list_bind$TITLE<-str_to_title(peaks_list_bind$TITLE)
+    }else{
+    stop("no mgf input.")
+      }
+  
+  message("mgf_id_Summary parameters")
+  
+    Metabolite.list <-split(peaks_list_bind$RT, peaks_list_bind$Name)
+    RT.stats<-t(sapply(Metabolite.list,function(x) {
+      x<-as.numeric(x)
+      c(RT.median=round(median(x,na.rm=TRUE),3),
+        RT.shift=round((median(x,na.rm=TRUE)-(quantile(x, prob = 0.25,na.rm=TRUE)-IQR(x,na.rm=TRUE)*1.5)),2),
+        RT.shift=round(((quantile(x, prob = 0.75,na.rm=TRUE)+IQR(x,na.rm=TRUE)*1.5)-median(x,na.rm=TRUE)),2)
+    )}
+    ))
+    colnames(RT.stats)<-c("RT.median","RT.shfit.Lower", "RT.shfit.upper")
+    RT.stats=RT.stats[is.na(RT.stats[,"RT.median"])!=T,]
+    
+    
+    ID.stats<-t(sapply(split(peaks_list_bind$RT, peaks_list_bind$Name),function(x) c(RT.first=x[1],
+                                                                                     Total.ID=length(x[!is.na(x)]))))
+    Ref.ion.stats<-t(sapply(split(peaks_list_bind$MODELION, peaks_list_bind$Name),function(x) c(Ref.ion=paste(unique(x),collapse = ";"),
+                                                                                                Ref.ion.unique=length(unique(x)))))
+    report.RT.stats <- data.frame(cbind(Name=0,Ref.ion.stats, ID.stats, RT.stats, CAS=0))
+    
+    report.RT.stats$Name <- rownames(RT.stats)
+    
+    RT.list<-lapply(Metabolite.list,function(x) c(RT.shift=(quantile(x, prob = 0.25,na.rm=TRUE)-IQR(x,na.rm=TRUE)*1.5),
+                                                  RT.shift=(quantile(x, prob = 0.75,na.rm=TRUE)+IQR(x,na.rm=TRUE)*1.5)))
+    Remove.outlier<-function(x,y){
+      x[x >= y[1]]
+      x[x <= y[2]]
+    }
+    
+    Remove.metabolite <-mapply(Remove.outlier, Metabolite.list, RT.list )
+    
+    # Plot all retention time of all metabolites
+    
+    n.total <- length(Metabolite.list)
+    png(paste(getwd(),"/retention time of all metabolites.png",sep=""),width = 30,height = 30, bg = "white",units = "in",res = 600)
+    par(mar=c(5,10,5,5))
+    boxplot(Metabolite.list, xlab= "Retention time (min)", cex.axis=0.2,  horizontal = TRUE, las=2, xaxt="n", main = paste("Retention time distribution of all metabolites ","(n=",n.total,")",sep=""))
+    axis(1,cex.axis=1,las=1)
+    dev.off()
+    
+    
+    ## solve multimodel issue
+    
+    
+    
+    report.split<-NULL
+    deletenamelist<-NULL
+    save.folder<-paste("RTshift_warnings_",RT.shift.limt,"s_","shift",sep="")
+    if (dir.exists(save.folder)!=T) try(dir.create (save.folder))
+    
+    for (component in 1:length(Remove.metabolite)){
+      windows_filename<- function(stringX){
+        stringX<-stringr::str_remove_all(stringX,"[><*?:\\/\\\\|]")
+        stringX<-gsub("\"", "", stringX)
+        if (nchar(stringX)>=100){stringX=strtrim(stringX,100)}
+        return(stringX)
+        
+      }
+      
+      if(`&`((RT.stats[component,2] + RT.stats[component,3]) > RT.shift.limt, T)){
+        RT_libsimilarity=NULL
+        
+        names.var<- windows_filename(names(Remove.metabolite)[component])
+        RT_libsimilarity<-peaks_list_bind[peaks_list_bind$Name==names(Remove.metabolite)[component],]
+        m.var <- data.frame(Remove.metabolite[component])[,1]
+        metabolite.name<-names(Remove.metabolite[component])
+        res=NULL
+        res <- try(density.all <- density(m.var, bw = "SJ"))
+        if(class(res)=="try-error"){density.all <- density.default(m.var)}
+        density.var <- density.all$y
+        density.x <-  density.all$x[density.var>0.01]
+        density.var <-  density.var[density.var>0.01]
+        
+        modes <- NULL
+        centre.p <- NULL
+        for ( i in 2:(length(density.var)-1) ){
+          if ( (density.var[i] > density.var[i-1]) & (density.var[i] > density.var[i+1]) ) {
+            modes <- c(modes,i)
+          }
+          if ( (density.var[i] < density.var[i-1]) & (density.var[i] < density.var[i+1]) ) {
+            centre.p <- c(centre.p,i)
+          }
+        }
+        
+        new.median<- density.x[modes]
+        new.boundary<- density.x [centre.p]
+        npeaks <-length(new.median)
+        
+        if(npeaks>1){
+          
+          vComposti <- vector("list", npeaks)
+          m.var.sub <- m.var
+          
+          for (i in 1:(npeaks-1)){
+            vComposti[i] <-list(m.var.sub [m.var.sub <new.boundary[i]])
+            m.var.sub[m.var.sub<new.boundary[i]]<-NA
+          }
+          
+          vComposti[npeaks] <- list(m.var.sub)
+          
+          RT.add.stats <- t(sapply(vComposti,function(x) c(Total.ID=length(x[!is.na(x)]),
+                                                           RT.median=round(median(x,na.rm=TRUE),3),
+                                                           RT.shift=round((median(x,na.rm=TRUE)-(quantile(x, prob = 0.25,na.rm=TRUE)-IQR(x,na.rm=TRUE)*3)),2),
+                                                           RT.shift=round(((quantile(x, prob = 0.75, na.rm=TRUE)+IQR(x,na.rm=TRUE)*3)-median(x,na.rm=TRUE)),2))))
+          
+          colnames(RT.add.stats)<-c("Total.ID","RT.median","RT.shfit.Lower", "RT.shfit.upper")
+          report.RT.stats.add <- report.RT.stats[rownames(report.RT.stats)==metabolite.name,]
+          
+          report.RT.stats.add <- cbind(report.RT.stats.add[,1:4] ,RT.add.stats, CAS=report.RT.stats.add[,"CAS"], row.names = NULL)
+          report.RT.stats.add$Name->report.RT.stats.add$Name_org
+          # re-name
+          for (i in 1:npeaks){
+            report.RT.stats.add$Name[i] <- paste(metabolite.name, " (split peak ", i, ")", sep="")
+          }
+          report.split <- rbind(report.split, report.RT.stats.add)
+          deletenamelist<-c(deletenamelist,metabolite.name)
+          
+        }          
+        if (generate_rt_shift_graph){          
+          names.var<- windows_filename(names(Remove.metabolite)[component])     
+          
+          png(filename=paste(save.folder,"/",names.var,".png",sep=""))
+          plot(RT_libsimilarity$RT,log(as.numeric(RT_libsimilarity$INTEGRATEDAREA)),  ylab = "AREA (log)",
+               xlab= "Retention time (min)", main = names(Remove.metabolite)[component], lwd=1.5)
+          dev.off()
+        }
+        
+      }
+    }
+    
+    if(is.null(report.split)!=TRUE){
+      
+      deletenamelist=unique(deletenamelist)
+      
+      report.RT.statscombine<-report.RT.stats[!(report.RT.stats$Name %in% (deletenamelist)),]
+      
+      report.RT.resolved<-report.RT.stats[(report.RT.stats$Name %in% (deletenamelist)),]
+      
+      
+      report.split=unique(report.split)
+      report.split<-report.split[report.split$Total.ID>1,]
+      report.split<-report.split[report.split$Name_org!="Unknown",]
+      for ( i in 1:nrow(report.split)){
+        peaks_list_bind_cpd<-peaks_list_bind[peaks_list_bind$Name==report.split$Name_org[i],]
+        rtrow<-between(peaks_list_bind_cpd$RT,report.split$RT.median[i]-report.split$RT.shfit.Lower[i],report.split$RT.shfit.upper[i]+report.split$RT.median[i])
+        report.split$Ref.ion[i]<-paste0(unique(peaks_list_bind_cpd$MODELION[rtrow]),collapse=";")
+      }
+      #report.split$Name_org<-NULL
+      report.RT.statscombine$Name->report.RT.statscombine$Name_org
+      report.RT.stats <- rbind(report.RT.statscombine, report.split)
+    }
+    
+    report.RT.stats <- report.RT.stats[order(report.RT.stats$RT.median, decreasing = FALSE),]
+    File.nameNIST <- "Summary_ID_report.csv"
+    write.csv(report.RT.stats, file = File.nameNIST,row.names = FALSE)
+    
+    message(paste("Summary report was created and save in",workdir, sep=" "))
+    message(paste("Summarizing area report from mgf report",workdir, sep=" "))
+    
+    summary_temp<-NULL
+      report.RT.stats$RT.median<-as.numeric(report.RT.stats$RT.median)
+      report.RT.stats$RT.shfit.upper<-as.numeric(report.RT.stats$RT.shfit.upper)
+      report.RT.stats$RT.shfit.Lower<-as.numeric(report.RT.stats$RT.shfit.Lower)
+    for (i in 1:nrow(report.RT.stats)){
+      
+      df<-NULL
+      if(report.RT.stats$Total.ID[i]==1){
+        peaks_list_bind[peaks_list_bind$RT == report.RT.stats$RT.first[i],]->df
+        df[ df$MODELION==report.RT.stats$Ref.ion[i],]->df
+        df$Name<-report.RT.stats$Name[i]
+        summary_temp[[report.RT.stats$Name[i]]]<-df
+      }else{
+        peaks_list_bind[between(peaks_list_bind$RT ,
+                        report.RT.stats$RT.median[i]-report.RT.stats$RT.shfit.Lower[i]-0.001,
+                        report.RT.stats$RT.shfit.upper[i]+report.RT.stats$RT.median[i]+0.001),]->df
+        df[ df$MODELION %in% str_split(report.RT.stats$Ref.ion[i],";")[[1]],]->df
+        df$Name<-report.RT.stats$Name[i] 
+        summary_temp[[report.RT.stats$Name[i]]]<-df
+       }
+        
+      
+        
+    }
+      summary_temp_bind<-do.call(rbind,summary_temp)
+      summary_temp_bind$INTEGRATEDAREA<-as.numeric(summary_temp_bind$INTEGRATEDAREA)
+      library(reshape2)
+      summary_temp_bind_cast_ID_count<-dcast(summary_temp_bind,Name ~ file,value.var = "INTEGRATEDAREA",fun.aggregate = length)
+      summary_temp_bind_cast_ID_sum<-dcast(summary_temp_bind,Name ~ file,value.var = "INTEGRATEDAREA",fun.aggregate = sum)
+      
+      File.nameNIST="Summary_ID_count_report.csv"
+      write.csv(summary_temp_bind_cast_ID_count, file = File.nameNIST,row.names = FALSE)
+      File.nameNIST="Summary_ID_area_report.csv"
+      write.csv(summary_temp_bind_cast_ID_sum, file = File.nameNIST,row.names = FALSE)
+      message(paste("Summarizing area report saved in",workdir, sep=" "))
+      
+}
 #' MassHunter report file (.cefs) parsing and summary
 #'
 #' This is a function to process the AMDIS_report.txt file. specify a in-house library or a subset of NIST library to find the most intense quantification ion within the GC-MS experiment m/z range. The script will invoke selection windows to let the user specify the files location.  

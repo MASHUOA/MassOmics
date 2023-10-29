@@ -202,7 +202,7 @@ DataCorrection <- function(){
           TotBelow[j]<-sum(samples[[j]]< blankmeans[[j]])
           RatioAbove[j]<-mean((samples[[j]][samples[[j]]>blankmeans[[j]]])/blankmeans[[j]])
         }
-        outcome$PropBelow[i]<-sum(TotBelow)/sum(Type=='Sample')
+        outcome$PropBelow[i]<-sum(TotBelow, na.rm=T)/sum(Type=='Sample')
         outcome$RatioAbove[i]<-mean(RatioAbove[blankmeans>0], na.rm=T)
         if(outcome$PropBelow[i]<A & mean(samples$`1`)!=0){outcome$Crit1[i]<-'PASS' } else{outcome$Crit1[i]<-'FAIL'}
         if(outcome$PropBelow[i]>0 |mean(samples$`1`)==0){
