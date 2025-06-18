@@ -1,0 +1,117 @@
+---
+title: "SERRF"
+author: "George GUO"
+date: "25/01/2021"
+output:
+  html_document: 
+    keep_md: yes
+    toc: yes
+    toc_float: yes
+    collapsed: no
+    theme: spacelab
+    number_sections: yes
+    highlight: zenburn
+    fig_width: 10
+    fig_height: 10
+    df_print: tibble
+  pdf_document: default
+  word_document: default
+  md_document:
+    variant: markdown_github
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+getwd()
+source("Randomforest.R")
+source("Parallele.R")
+
+Combine_result_file<-function(path){
+  
+  e=read.csv(paste0(path,"/","e.csv"),stringsAsFactors = F)
+  
+  enorm=read.csv(paste0(path,"/","SERRF_normalized.csv"),stringsAsFactors = F)
+  
+  f=read.csv(paste0(path,"/","f.csv"),stringsAsFactors = F)
+  
+  p=read.csv(paste0(path,"/","p.csv"),header = F,stringsAsFactors = F)
+  
+  p=p[,2:5]
+  
+  
+  
+  rownames(p)=as.character(p[,which(p[1,]=="time")])
+  rownames(p)[1]="time"
+  tp=as.data.frame(t(p),stringsAsFactors=F)
+  colnames(e)=as.character(p[,which(p[1,]=="time")])
+  finaltable<-rbind(tp,e)
+  colnames(enorm)=as.character(p[,which(p[1,]=="time")])
+  finaltablenorm<-rbind(tp,enorm)
+  
+  return(list(raw=finaltable,norm=finaltablenorm))
+  
+  
+}
+```
+
+## data preparation
+
+Place the attachments to the same folder and run the "Knit".
+
+
+Now we run the script to analyze a GC-MS data set.
+
+## Load data
+```{r cars}
+#data<-readData_serrf_native(path =  "GC-MS Result(PeakArea).csv",infopath="subject_information_sheet.csv")
+
+data<-readData(path = "Area_7_20192281555.txt_output.csv")
+```
+Loaded data has three components:
+e, f, p
+
+e contains the response data:
+```{r}
+data$e
+```
+
+
+f is the summary of all considered features:
+```{r}
+data$f
+```
+p is the summary of all samples, time is the injection order:
+```{r}
+data$p
+```
+
+So you may need to prepare your data into these format as well.
+
+## Run Serrf
+
+You can also embed plots, for example:
+
+```{r , eval=FALSE, include=T}
+
+
+SERRF_Norm_finaltable<-SERRF(data=data,Log_trans=F,zero_imputaion=T,vis_norm_result=F,Predict_level="QC")
+
+
+```
+
+## view the results
+browser to the sub-folder to have a look at the normed results:
+```{r}
+library(magick)
+p<-image_read(paste0("Area.csvSERRF_QC/combine_figure.png"))
+p
+
+```
+
+Or the normed results of some representative features:
+```{r}
+library(magick)
+p<-image_read(paste0("Area.csvSERRF_QC/combine_figure_pcs.png"))
+print(p)
+
+```
