@@ -1,9 +1,12 @@
 Package: MassOmics
 Type: Package
 Title: Data extraction pipeline for large-scale GC-MS metabolomics datasets
-Version: 2.5.3
+Version: 2.5.4
 Date: 
-Depends: R (>= 3.5.0), methods, Biobase, BiocParallel, MSnbase, ncdf4
+Depends: R (>= 4.5.0), methods, Biobase, BiocParallel, MSnbase, ncdf4,Rcpp,openxlsx,tidyr,randomForest,rfviz,ggpubr,extrafont,xcms,svDialogs,reticulate,
+    svGUI,KEGGREST,RColorBrewer,rgl,mixOmics,plyr,flux,tkrplot,multtest,XML,checkmate,pbapply,
+    CAMERA,qvalue,doParallel,BiocManager,pacman,backports,BiocParallel,zip,stringdist,OneR,pander,uuid,
+    officer,systemfonts,gdtools,rvg,impute,vctrs,rJava
 Author: George GUO, Ting-Li Han, Elizabeth J. McKenzie, M. Beatrix Jones
 Maintainer: George GUO <George.GUO@auckland.ac.nz>
 Description: "MassOmics" is designed to bring together R packages and scripts for GC-MS data pro-cessing to rapidly integrate and annotate peaks in large-scale datasets, all within a graphical user-friendly interface. This package also provides identification of background contaminants, various normalisation methods, correction of analytical variation, and basic multivariate statistical analysis.
@@ -14,10 +17,7 @@ Packaged:
 RoxygenNote: 7.2.3
 Encoding: UTF-8
 Imports: 
-    tcltk,tcltk2,Rcpp,openxlsx,tidyr,randomForest,rfviz,ggpubr,extrafont,xcms,svDialogs,reticulate,
-    svGUI,KEGGREST,RColorBrewer,rgl,mixOmics,plyr,flux,tkrplot,multtest,XML,checkmate,pbapply,
-    CAMERA,qvalue,doParallel,BiocManager,pacman,backports,BiocParallel,zip,stringdist,OneR,pander,uuid,
-    officer,systemfonts,gdtools,rvg,impute,vctrs,rJava
+    tcltk,tcltk2
 Suggests: 
     covr,
     devtools
