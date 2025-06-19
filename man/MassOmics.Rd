@@ -2,6 +2,7 @@
 % Please edit documentation in R/MassOmics.r
 \docType{package}
 \name{MassOmics}
+\alias{-package}
 \alias{MassOmics}
 \alias{clean.fix}
 \title{\tabular{ll}{

@@ -2191,10 +2191,14 @@ raw.peaks <- function (main.folder = choose.dir(caption = "Select Working Direct
 
 ######################################### run #########################################
 run <- function(){
-  if (!requireNamespace("pacman", quietly = TRUE)) {
-    stop("pacman package is required but not installed.")
+  if (!requireNamespace("tcltk", quietly = TRUE)) {
+    stop("tcltk package is required but not installed.")
   }
-  pacman::p_load(tcltk2)
+  if (!requireNamespace("tcltk2", quietly = TRUE)) {
+    stop("tcltk2 package is required but not installed.")
+  }
+  library(tcltk)
+  library(tcltk2)
   tt <- tktoplevel(width=600, height=200)
   tktitle(tt) <- "MassOmics"
 
@@ -2204,10 +2208,10 @@ run <- function(){
   fileMenu <- tk2menu(topMenu, tearoff = FALSE)
   software <- tk2menu(topMenu, tearoff = FALSE)  # Our cascaded menu
   installation  <- tk2menu(topMenu, tearoff = FALSE)
-  Update<-tkmenu(topMenu, tearoff = FALSE)
+  Update<-tk2menu(topMenu, tearoff = FALSE)
   Statistics <- tk2menu(topMenu, tearoff = FALSE)
-  PAPi<- tkmenu(topMenu, tearoff = FALSE)
-  Graph<-tkmenu(topMenu, tearoff = FALSE)
+  PAPi<- tk2menu(topMenu, tearoff = FALSE)
+  Graph<-tk2menu(topMenu, tearoff = FALSE)
 
 
 
@@ -2963,6 +2967,9 @@ TMS_analysis <- function(main.TMS.folder=tk_choose.dir(caption = "Select working
 MassOmics.GUI<-function(){
   if (!requireNamespace("tcltk2", quietly = TRUE)) {
     stop("tcltk2 package is required but not installed.")
+  }
+  if (!requireNamespace("tcltk", quietly = TRUE)) {
+    stop("tcltk package is required but not installed.")
   }
   run()
 }

@@ -1,7 +1,7 @@
 Package: MassOmics
 Type: Package
 Title: Data extraction pipeline for large-scale GC-MS metabolomics datasets
-Version: 2.5.6
+Version: 2.5.8
 Date: 
 Depends: R (>= 4.5.0)
 Author: George GUO, Ting-Li Han, Elizabeth J. McKenzie, M. Beatrix Jones
@@ -11,14 +11,14 @@ License: GPL-2
 LazyLoad: yes
 NeedsCompilation: no
 Packaged: 
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.2
 Encoding: UTF-8
 Imports: 
-    tcltk,tcltk2,pacman
+    tcltk,tcltk2,pacman,methods,Biobase,BiocParallel,MSnbase,ncdf4,Rcpp,openxlsx,tidyr,xcms,svDialogs,
+    KEGGREST,RColorBrewer,plyr,flux,tkrplot,multtest,XML,checkmate,pbapply,CAMERA,qvalue,doParallel,
+    BiocManager,backports,zip,stringdist,OneR,pander,uuid
 Suggests: 
-    methods,Biobase,BiocParallel,MSnbase,ncdf4,Rcpp,openxlsx,tidyr,randomForest,rfviz,ggpubr,extrafont,xcms,svDialogs,reticulate,
-    svGUI,KEGGREST,RColorBrewer,rgl,mixOmics,plyr,flux,tkrplot,multtest,XML,checkmate,pbapply,
-    CAMERA,qvalue,doParallel,BiocManager,backports,zip,stringdist,OneR,pander,uuid,
+    randomForest,rfviz,ggpubr,extrafont,reticulate,svGUI,rgl,mixOmics,
     officer,systemfonts,gdtools,rvg,impute,vctrs,covr,devtools
 VignetteBuilder: knitr
 biocViews: ImmunoOncology, MassSpectrometry, Metabolomics
