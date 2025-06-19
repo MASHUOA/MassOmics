@@ -11,10 +11,7 @@
 #' @keywords package
 #' @import tcltk
 #' @import tcltk2
-#' @import BiocManager
 #' @import pacman
-#' @import BiocParallel
-#' @import pander
 #' @importFrom stats na.omit runif
 #' @importFrom utils download.file modifyList packageVersion read.table tail
 
@@ -2194,8 +2191,10 @@ raw.peaks <- function (main.folder = choose.dir(caption = "Select Working Direct
 
 ######################################### run #########################################
 run <- function(){
-  library("pacman")
-  p_load(tcltk2)
+  if (!requireNamespace("pacman", quietly = TRUE)) {
+    stop("pacman package is required but not installed.")
+  }
+  pacman::p_load(tcltk2)
   tt <- tktoplevel(width=600, height=200)
   tktitle(tt) <- "MassOmics"
 
@@ -2246,7 +2245,7 @@ run <- function(){
 
   tkadd(installation, "command", label = "Required R packages",command = function() install.MassOmics_dependency())
   tkadd(installation, "command", label = "Required R packages for MzMatch",command = function() install.mzmatch())
-  tkadd(Update, "cascade", label = "Version 2.5 (11June2017)")
+  tkadd(Update, "cascade", label = packageVersion("MassOmics"))
 
   ## Statistics
   tkadd(Statistics, "command", label = "Run ANOVA & T-test",command = function() Omics_htest())
@@ -2962,9 +2961,10 @@ TMS_analysis <- function(main.TMS.folder=tk_choose.dir(caption = "Select working
 #'
 #' @export
 MassOmics.GUI<-function(){
- library(tcltk2) 
+  if (!requireNamespace("tcltk2", quietly = TRUE)) {
+    stop("tcltk2 package is required but not installed.")
+  }
   run()
-  
 }
 
 
