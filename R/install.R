@@ -13,13 +13,13 @@ install.MassOmics_dependency <- function(){
   
   p_install(c("tcltk","tcltk2","stringdist","pbapply","PAPi","Rcpp","openxlsx","tidyr","faahKO","randomForest","rfviz",
               "ggpubr","extrafont","mzR","Rcpp","xcms","svDialogs","svGUI","KEGGREST",
-              "RColorBrewer","rgl","mixOmics","plyr","flux","tkrplot", "xlsx","multtest","XML",
+              "RColorBrewer","rgl","mixOmics","plyr","flux","tkrplot","multtest","XML",
               "CAMERA","qvalue", "doParallel","ggplot2","ggplot","MALDIquant","CAMERA"),try.bioconductor = TRUE,lib=librarypath,force = T,character.only = F)
   #font_import(prompt=F)
   #loadfonts(device = "win")
   if (!requireNamespace("BiocManager"))
     install.packages("BiocManager")
-  BiocManager::install(c("mzR","Rcpp","xcms","svDialogs","svGUI","KEGGREST","RColorBrewer","rgl","mixOmics","plyr","flux","tkrplot", "xlsx","multtest","CAMERA","qvalue", "doParallel"))
+  BiocManager::install(c("mzR","Rcpp","xcms","svDialogs","svGUI","KEGGREST","RColorBrewer","rgl","mixOmics","plyr","flux","tkrplot","multtest","CAMERA","qvalue", "doParallel"))
   message("Installation Complete!")
 }
 ######################################### install.mzmatch #########################################

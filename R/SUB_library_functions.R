@@ -1178,9 +1178,8 @@ ChemstationLibraryEntry<-function(workdir=NULL,rootdir=dirname(workdir)){
   
   
   
-  library(rJava)
   library(data.table)
-  library(xlsx)
+  library(openxlsx)
   
   # Set "chekStationFileLoc" to directory location to where ChemStation outfiles are.
   # There should ONLY be the ChemStation xls files in this directory
@@ -1211,7 +1210,7 @@ ChemstationLibraryEntry<-function(workdir=NULL,rootdir=dirname(workdir)){
   if (length(excelFiles)>=1){
       for(i in 1:length(excelFiles)){
     
-    infile <- xlsx::read.xlsx(file=paste(chemStationFileLoc,excelFiles[i], sep = "/"), sheetName="LibRes", startRow=9)
+    infile <- openxlsx::read.xlsx(file=paste(chemStationFileLoc,excelFiles[i], sep = "/"), sheet="LibRes", startRow=9)
     if (!is.null(infile)){
       if(libraryname==""){libraryname=as.character(infile[1,"Library"])}
       libraryname=unique(c(libraryname,infile[,"Library"]))
