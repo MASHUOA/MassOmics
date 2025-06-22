@@ -95,12 +95,10 @@ install.packages("remotes")
 Sys.setenv(R_REMOTES_NO_ERRORS_FROM_WARNINGS=T)
 library(devtools)
 library(remotes)
-install_github("MASHUOA/MassOmics",force=T)
-3
-no
+install_github("MASHUOA/MassOmics",force=T,ask=F)
+
 #Update all dependencies
 BiocManager::install(ask = F)
-yes
 library(MassOmics)
 Creat_short_cut()
 ```

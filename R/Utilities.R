@@ -1,12 +1,16 @@
 read_table_generic<-function(path,header=T){
   
-  if(grepl(".xlsx", path)){
+  if(grepl(".xlsx$", path)){
     d <- openxlsx::read.xlsx(path, sheet = 1,colNames = header)
-  }else if(grepl(".xls", path)){
+  }else if(grepl(".xls$", path)){
+    if (!requireNamespace("readxl", quietly = TRUE)) {
+      stop("readxl package is required to read .xls files but is not available.")
+    }
+    d <- readxl::read_excel(path, sheet = 1, col_names = header)
+    d <- as.data.frame(d)  # Convert tibble to data.frame
+  }else if(grepl(".xlsm$", path)){
     d <- openxlsx::read.xlsx(path, sheet = 1,colNames = header)
-  }else if(grepl(".xlsm", path)){
-    d <- openxlsx::read.xlsx(path, sheet = 1,colNames = header)
-  }else if(grepl(".csv", path)){
+  }else if(grepl(".csv$", path)){
     d <- data.table::fread(path,header = header)
     if(nrow(d)<2){d <- read.csv(path,header = header)}
   }
@@ -367,39 +371,31 @@ if ("CAS" %in% names(df)) {
 }
 
 casno_reformating_string<-function(str,hypon=T){
-  str$CAS=str
-  if ("CAS" %in% names(str)) {
-    library(stringr)
-    str$CAS<-gsub(" ","",str$CAS)
-    str$CAS<-gsub("-","",str$CAS)
-    if (hypon) {
-      str_CAS_width<-str_length(str$CAS)
-      cas_last<-str_sub(str$CAS,str_CAS_width,str_CAS_width)
-      cas_last_23<-str_sub(str$CAS,str_CAS_width-2,str_CAS_width-1)
-      cas_last_rest<-str_sub(str$CAS,1,str_CAS_width-3)
-      casfinal<-data.frame(a=cas_last_rest,b=cas_last_23,c=cas_last,stringsAsFactors = F)
-      cas_final<-unlist(lapply(1:nrow(casfinal),function(x,casfinal){
-        str_glue(casfinal$a[x],"-",casfinal$b[x],"-",casfinal$c[x])
-      },casfinal))
-      str$CAS<-cas_final
-    }
-  } else if ("CASNO" %in% names(str)) {
-    library(stringr)
-    str$CASNO<-gsub(" ","",str$CASNO)
-    str$CASNO<-gsub("-","",str$CASNO)
-    if (hypon) {
-      str_CASNO_width<-str_length(str$CASNO)
-      CASNO_last<-str_sub(str$CASNO,str_CASNO_width,str_CASNO_width)
-      CASNO_last_23<-str_sub(str$CASNO,str_CASNO_width-2,str_CASNO_width-1)
-      CASNO_last_rest<-str_sub(str$CASNO,1,str_CASNO_width-3)
-      CASNOfinal<-data.frame(a=CASNO_last_rest,b=CASNO_last_23,c=CASNO_last,stringsAsFactors = F)
-      CASNO_final<-unlist(lapply(1:nrow(CASNOfinal),function(x,CASNOfinal){
-        str_glue(CASNOfinal$a[x],"-",CASNOfinal$b[x],"-",CASNOfinal$c[x])
-      },CASNOfinal))
-      str$CASNO<-CASNO_final
-    }
-  }else{
-    message("No CAS column found in the data.frame...")
+  # Simple string processing for CAS numbers
+  if(!requireNamespace("stringr", quietly = TRUE)) {
+    return(str)  # Return unchanged if stringr not available
   }
-  return(str$CAS)
+  
+  # Ensure we're working with character input
+  if (!is.character(str)) {
+    return(str)
+  }
+  
+  library(stringr)
+  # Clean the string
+  cleaned_str <- gsub(" ","",str)
+  cleaned_str <- gsub("-","",cleaned_str)
+  
+  if (hypon && nchar(cleaned_str) >= 3) {
+    str_width <- str_length(cleaned_str)
+    cas_last <- str_sub(cleaned_str, str_width, str_width)
+    cas_last_23 <- str_sub(cleaned_str, str_width-2, str_width-1)
+    cas_last_rest <- str_sub(cleaned_str, 1, str_width-3)
+    
+    # Format with hyphens
+    formatted_cas <- paste0(cas_last_rest, "-", cas_last_23, "-", cas_last)
+    return(formatted_cas)
+  }
+  
+  return(cleaned_str)
 }

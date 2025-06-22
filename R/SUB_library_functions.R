@@ -34,7 +34,14 @@ Liz_analysis <- function(workdir=tk_choose.dir(caption = "Select working directo
     rez<-matrix(NA, nrow=length(entry.nms), ncol=length(att.nms), dimnames=list(NULL,att.nms ))
     
     starts<-grep("NAME:", lib.txt)
-    stops<-c(starts[1:(length(starts)-1)]+diff(starts)-1,length(lib.txt))
+    # Check if any entries were found
+    if(length(starts) == 0) {
+      stop("No entries found in library file. Check if the file format is correct.")
+    } else if(length(starts) == 1) {
+      stops<-length(lib.txt)
+    } else {
+      stops<-c(starts[1:(length(starts)-1)]+diff(starts)-1,length(lib.txt))
+    }
     for (i in 1:length(starts)){
       tmp<-lib.txt[starts[i]:stops[i]]
       sapply(strsplit(tmp[grep(":",tmp)],":"), function(x) rez[i,x[1]]<<-x[2])
@@ -561,7 +568,14 @@ create_sub_library <- function(workdir=tk_choose.dir(caption = "Select working d
     rez<-matrix(NA, nrow=length(entry.nms), ncol=length(att.nms), dimnames=list(NULL,att.nms ))
     
     starts<-grep("NAME:", lib.txt)
-    stops<-c(starts[1:(length(starts)-1)]+diff(starts)-1,length(lib.txt))
+    # Check if any entries were found
+    if(length(starts) == 0) {
+      stop("No entries found in library file. Check if the file format is correct.")
+    } else if(length(starts) == 1) {
+      stops<-length(lib.txt)
+    } else {
+      stops<-c(starts[1:(length(starts)-1)]+diff(starts)-1,length(lib.txt))
+    }
     
     
     # function for select right digit
@@ -1210,9 +1224,22 @@ ChemstationLibraryEntry<-function(workdir=NULL,rootdir=dirname(workdir)){
   if (length(excelFiles)>=1){
       for(i in 1:length(excelFiles)){
     
-    infile <- openxlsx::read.xlsx(file=paste(chemStationFileLoc,excelFiles[i], sep = "/"), sheet="LibRes", startRow=9)
+    file_path <- paste(chemStationFileLoc,excelFiles[i], sep = "/")
+    
+    # Check file extension and use appropriate reader
+    if(grepl("\\.xls$", excelFiles[i])) {
+      # Old Excel format - use readxl
+      if (!requireNamespace("readxl", quietly = TRUE)) {
+        stop("readxl package is required to read .xls files but is not available.")
+      }
+      infile <- readxl::read_excel(file_path, sheet="LibRes", skip=8)
+      infile <- as.data.frame(infile)  # Convert tibble to data.frame
+    } else {
+      # New Excel format - use openxlsx
+      infile <- openxlsx::read.xlsx(file_path, sheet="LibRes", startRow=9)
+    }
     if (!is.null(infile)){
-      if(libraryname==""){libraryname=as.character(infile[1,"Library"])}
+      if(libraryname[1]==""){libraryname=as.character(infile[1,"Library"])}
       libraryname=unique(c(libraryname,infile[,"Library"]))
       fileName <- gsub("", replacement="", x=excelFiles[i])
       
@@ -1254,7 +1281,7 @@ ChemstationLibraryEntry<-function(workdir=NULL,rootdir=dirname(workdir)){
     infile=na.omit(infile1)
     if('&'(ncol(infile)==14,colnames(infile)[1]=="CPD")){
       
-      if(libraryname==""){libraryname=as.character(infile[1,"Library"])}
+      if(libraryname[1]==""){libraryname=as.character(infile[1,"Library"])}
       libraryname=unique(c(libraryname,infile[,"Library"]))
       fileName <- gsub("", replacement="", x=csvFiles[i])
       
@@ -1278,6 +1305,7 @@ ChemstationLibraryEntry<-function(workdir=NULL,rootdir=dirname(workdir)){
   }
   }
   #newData <- processDF(infile.reduced)
+  newMergedFile<-newMergedFile[!is.na(newMergedFile$Hit.No),]
   newMergedFile$Name=paste0("\"",as.character(newMergedFile$Name),"\"")
   newMergedFile$Name=as.character(gsub("\"","",newMergedFile$Name))
   newMergedFile$Name=as.character(gsub(",","",newMergedFile$Name))
@@ -1292,7 +1320,29 @@ ChemstationLibraryEntry<-function(workdir=NULL,rootdir=dirname(workdir)){
   # write out "Entry.No.Lib" with duplicates removed in a separate file
   #unique.Entry.No <- unique(newData[,"Entry.No.Lib"])
   libraryname<<-libraryname
-  library_list<-unique(newData[,c("Entry.No.Lib", "Library")])
+  
+  # Check if columns exist before selecting them
+  required_cols <- c("Entry.No.Lib", "Library")
+  available_cols <- names(newData)
+  missing_cols <- required_cols[!required_cols %in% available_cols]
+  
+  if(length(missing_cols) > 0) {
+    message("Warning: Missing columns: ", paste(missing_cols, collapse = ", "))
+    message("Available columns: ", paste(available_cols, collapse = ", "))
+    
+    # Try alternative column names
+    alt_entry_col <- grep("Entry.*Lib|Library.*Entry|Entry.*No", available_cols, value = TRUE, ignore.case = TRUE)[1]
+    alt_library_col <- grep("^Library$|^Lib$", available_cols, value = TRUE, ignore.case = TRUE)[1]
+    
+    if(!is.na(alt_entry_col) && !is.na(alt_library_col)) {
+      library_list <- unique(newData[,c(alt_entry_col, alt_library_col)])
+      names(library_list) <- c("Entry.No.Lib", "Library")
+    } else {
+      stop("Cannot find required columns for library processing")
+    }
+  } else {
+    library_list <- unique(newData[,c("Entry.No.Lib", "Library")])
+  }
   
   for (libraryname in unique(library_list$Library)){
   unique.Entry.No <- library_list[library_list$Library==libraryname,"Entry.No.Lib"]
@@ -1346,7 +1396,14 @@ msp_to_msl<-function(mspfile=NULL,RI_retrieve=T,RI_column_type=c("5ms","wax"),sa
   comments.nms<-sapply(strsplit(mspcontent1[grep("Comment:",mspcontent1)],"Comment:"), function(x) x[2])
   rez<-matrix(NA, nrow=length(entry.nms), ncol=length(att.nms), dimnames=list(NULL,att.nms ))
   starts<-grep("Name:", mspcontent)
-  stops<-c(starts[1:(length(starts)-1)]+diff(starts)-1,length(mspcontent))
+  # Check if any entries were found
+  if(length(starts) == 0) {
+    stop("No entries found in MSP file. Check if the file format is correct.")
+  } else if(length(starts) == 1) {
+    stops<-length(mspcontent)
+  } else {
+    stops<-c(starts[1:(length(starts)-1)]+diff(starts)-1,length(mspcontent))
+  }
   for (i in 1:length(starts)){
     tmp<-mspcontent[starts[i]:stops[i]]
     sapply(strsplit(tmp[grep(":",tmp)],":"), function(x) rez[i,x[1]]<<-x[2])
@@ -1367,21 +1424,45 @@ msp_to_msl<-function(mspfile=NULL,RI_retrieve=T,RI_column_type=c("5ms","wax"),sa
   rez<-casno_reformating(rez,hypon = F)
   if (RI_retrieve){
     message(paste("Retrieving RI information... Selected colomn type:",RI_column_type))
-    library(reticulate)
-    library(pbapply)
-    source_python(paste0(file.path(path.package(package="MassOmics")),"/src/lookup_ri.py"))
-    retrieve_CASNO<-unique(rez$CASNO)
-    retrieve_RI<-pblapply(retrieve_CASNO,function(x, RI_column_type){
-      library(reticulate)
-      library(MassOmics)
-      source_python(paste0(file.path(path.package(package="MassOmics")),"/src/lookup_ri.py"))
-      get_ri(x, RI_column_type)
-    }, RI_column_type,cl=autoStopCluster(detectCores()))
-    retrieve_df<-data.frame(stringsAsFactors = F,CASNO=retrieve_CASNO,Retrieved_RI=unlist(retrieve_RI))
-    rez_merge<-merge(rez,retrieve_df,by="CASNO")
-    rez_merge$RI<-rez_merge$Retrieved_RI
-    org_rez<-rez
-    rez<-rez_merge[,c("Name","Comment","MW","RI","Formula","CASNO","SOURCE","Num.peaks")]
+    
+    # Check if Python and reticulate are available
+    if (!requireNamespace("reticulate", quietly = TRUE)) {
+      message("Warning: reticulate package not available, skipping RI retrieval")
+      RI_retrieve <- FALSE
+    } else {
+      tryCatch({
+        library(reticulate)
+        library(pbapply)
+        
+        # Check if Python script exists
+        python_script <- paste0(file.path(path.package(package="MassOmics")),"/src/lookup_ri.py")
+        if (!file.exists(python_script)) {
+          message("Warning: Python script not found, skipping RI retrieval")
+          RI_retrieve <- FALSE
+        } else {
+          source_python(python_script)
+        }
+      }, error = function(e) {
+        message("Warning: Python/reticulate setup failed, skipping RI retrieval: ", e$message)
+        RI_retrieve <- FALSE
+      })
+    }
+    
+    # Only proceed with RI retrieval if setup was successful
+    if (RI_retrieve) {
+      retrieve_CASNO<-unique(rez$CASNO)
+      retrieve_RI<-pblapply(retrieve_CASNO,function(x, RI_column_type){
+        library(reticulate)
+        library(MassOmics)
+        source_python(paste0(file.path(path.package(package="MassOmics")),"/src/lookup_ri.py"))
+        get_ri(x, RI_column_type)
+      }, RI_column_type,cl=autoStopCluster(detectCores()))
+      retrieve_df<-data.frame(stringsAsFactors = F,CASNO=retrieve_CASNO,Retrieved_RI=unlist(retrieve_RI))
+      rez_merge<-merge(rez,retrieve_df,by="CASNO")
+      rez_merge$RI<-rez_merge$Retrieved_RI
+      org_rez<-rez
+      rez<-rez_merge[,c("Name","Comment","MW","RI","Formula","CASNO","SOURCE","Num.peaks")]
+    }
   }
   if(save_new_msp){
     mspcontent_new<-character(0)
@@ -1417,7 +1498,16 @@ msp_to_msl<-function(mspfile=NULL,RI_retrieve=T,RI_column_type=c("5ms","wax"),sa
   colnames(rez)<-c("NAME","COMMENT","MW","RI","FORM","CASNO","SOURCE","NUM PEAKS")
   
       
-  SumMSL=parSapply(cl=autoStopCluster(makeCluster(detectCores())),1:nrow(rez),generateMSL_par,rez,starts,stops,mspcontent)
+  # Use parallel processing with proper error handling
+  tryCatch({
+    if (!requireNamespace("parallel", quietly = TRUE)) {
+      stop("parallel package not available")
+    }
+    SumMSL <- parallel::parSapply(cl=autoStopCluster(parallel::makeCluster(parallel::detectCores())),1:nrow(rez),generateMSL_par,rez,starts,stops,mspcontent)
+  }, error = function(e) {
+    message("Warning: Parallel processing failed, using sequential processing: ", e$message)
+    SumMSL <- sapply(1:nrow(rez), generateMSL_par, rez, starts, stops, mspcontent)
+  })
   SumMSL=paste0(SumMSL,collapse = "\n")
   sink(paste0(gsub(".MSP","",mspfile),".MSL"))
   cat(SumMSL)

@@ -404,7 +404,15 @@ amdis_id_Summary<-function(workdir= NULL,
   entry.nms<-sapply(strsplit(lib.txt1[grep("NAME:",lib.txt1)],"ME:"), function(x) x[2])
   rez<-matrix(NA, nrow=length(entry.nms), ncol=length(att.nms), dimnames=list(NULL,att.nms ))
   starts<-grep("NAME:", lib.txt)
-  stops<-c(starts[1:(length(starts)-1)]+diff(starts)-1,length(lib.txt))
+  
+  # Check if any entries were found
+  if(length(starts) == 0) {
+    stop("No entries found in library file. Check if the file format is correct.")
+  } else if(length(starts) == 1) {
+    stops<-length(lib.txt)
+  } else {
+    stops<-c(starts[1:(length(starts)-1)]+diff(starts)-1,length(lib.txt))
+  }
   for (i in 1:length(starts)){
     tmp<-lib.txt[starts[i]:stops[i]]
     sapply(strsplit(tmp[grep(":",tmp)],":"), function(x) rez[i,x[1]]<<-x[2])
@@ -1216,7 +1224,15 @@ MassHunter_id_Summary<-function(workdir= NULL,
   entry.nms<-sapply(strsplit(lib.txt1[grep("NAME:",lib.txt1)],"ME:"), function(x) x[2])
   rez<-matrix(NA, nrow=length(entry.nms), ncol=length(att.nms), dimnames=list(NULL,att.nms ))
   starts<-grep("NAME:", lib.txt)
-  stops<-c(starts[1:(length(starts)-1)]+diff(starts)-1,length(lib.txt))
+  
+  # Check if any entries were found
+  if(length(starts) == 0) {
+    stop("No entries found in library file. Check if the file format is correct.")
+  } else if(length(starts) == 1) {
+    stops<-length(lib.txt)
+  } else {
+    stops<-c(starts[1:(length(starts)-1)]+diff(starts)-1,length(lib.txt))
+  }
   for (i in 1:length(starts)){
     tmp<-lib.txt[starts[i]:stops[i]]
     sapply(strsplit(tmp[grep(":",tmp)],":"), function(x) rez[i,x[1]]<<-x[2])
@@ -1757,7 +1773,16 @@ RT_correction<-function(df,topN=0.90,RT_std_limit=0.002,RT_drift_limit=0.2){
   
   
   
-  df$newRT<- parSapply(cl=autoStopCluster(makeCluster(try(detectCores()))),1:nrow(df),RT_correction_LORESS,df,dfsum)
+  # Use parallel processing with proper error handling  
+  tryCatch({
+    if (!requireNamespace("parallel", quietly = TRUE)) {
+      stop("parallel package not available")
+    }
+    df$newRT <- parallel::parSapply(cl=autoStopCluster(parallel::makeCluster(try(parallel::detectCores()))),1:nrow(df),RT_correction_LORESS,df,dfsum)
+  }, error = function(e) {
+    message("Warning: Parallel processing failed, using sequential processing: ", e$message)
+    df$newRT <- sapply(1:nrow(df), RT_correction_LORESS, df, dfsum)
+  })
   df$newRT<-as.numeric(unlist(df$newRT))
   df$rtdiff=abs(df$RT-df$newRT)
   df$finalRT=ifelse('&'(!is.na(df$newRT),df$rtdiff<RT_drift_limit),df$newRT,df$RT)

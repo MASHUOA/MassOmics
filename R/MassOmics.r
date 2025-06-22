@@ -2249,7 +2249,7 @@ run <- function(){
 
   tkadd(installation, "command", label = "Required R packages",command = function() install.MassOmics_dependency())
   tkadd(installation, "command", label = "Required R packages for MzMatch",command = function() install.mzmatch())
-  tkadd(Update, "cascade", label = packageVersion("MassOmics"))
+  tkadd(Update, "cascade", label = as.character(packageVersion("MassOmics")))
 
   ## Statistics
   tkadd(Statistics, "command", label = "Run ANOVA & T-test",command = function() Omics_htest())
@@ -2263,16 +2263,32 @@ run <- function(){
   ##PAPi
   tkadd(software, "cascade", label = "Pathway analysis", menu = PAPi)
   tkadd(PAPi ,"command", label = "Format massomics data for pathway analysis", command = function() PAPi_formatting())
-  tkadd(PAPi ,"command", label = "Building KEGG database in your PC", command = function() PAPi::buildDatabase())
+  tkadd(PAPi ,"command", label = "Building KEGG database in your PC", command = function() {
+    if (requireNamespace("PAPi", quietly = TRUE)) {
+      PAPi::buildDatabase()
+    } else {
+      tkmessageBox(message = "PAPi package is required but not installed.")
+    }
+  })
   tkadd(PAPi ,"command", label = "Replace name by KeggCodes", command = function() convert_PAPi())
   tkadd(PAPi ,"command", label = "Run pathway analysis", command = function() run_PAPi())
 
   #image
   status_text<-"Maintainer: George GUO (George.GUO@auckland.ac.nz)"
-  image.path<-c(paste(file.path(path.package(package="MassOmics")),"/R/LabLogo.gif", sep=""))
-  FrontImage<-tcl("image",  "create", "photo", "MaxC1.image", file=image.path)
-  tkgrid(tklabel(tt,image=FrontImage))
-  tkgrid(tklabel(tt,text=status_text))
+  image.path<-paste(file.path(path.package(package="MassOmics")),"/R/LabLogo.gif", sep="")
+  
+  # Try to load image, fall back to text if it fails
+  tryCatch({
+    if (file.exists(image.path)) {
+      FrontImage<-tcl("image", "create", "photo", "MaxC1.image", file=image.path)
+      tkgrid(tklabel(tt,image=FrontImage))
+    } else {
+      tkgrid(tklabel(tt,text=status_text))
+    }
+  }, error = function(e) {
+    # Fallback to text label if image loading fails
+    tkgrid(tklabel(tt,text=status_text))
+  })
   tkfocus(tt)
   ##Update 29April2016
 }
