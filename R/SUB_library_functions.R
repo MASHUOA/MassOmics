@@ -1390,12 +1390,45 @@ msp_to_msl<-function(mspfile=NULL,RI_retrieve=T,RI_column_type=c("5ms","wax"),sa
   mspcontent=readLines(mspfile)
   mspcontent1<-mspcontent[-grep("^[ ]*$",mspcontent)]
   att.nms<-unique(sapply(strsplit(mspcontent1[grep(":",mspcontent1)],":"),function(x) x[1]))
-  entry.nms<-sapply(strsplit(mspcontent1[grep("Name:",mspcontent1)],"Name:"), function(x) x[2])
+  # Handle both NAME: and Name: formats with case-insensitive detection
+  if(length(grep("^NAME:",mspcontent1)) > 0) {
+    name_pattern <- "NAME:"
+  } else if(length(grep("^Name:",mspcontent1)) > 0) {
+    name_pattern <- "Name:"
+  } else {
+    # Try case-insensitive match
+    name_lines <- grep("^[Nn][Aa][Mm][Ee]:",mspcontent1)
+    if(length(name_lines) > 0) {
+      first_name_line <- mspcontent1[name_lines[1]]
+      name_pattern <- sub("^([Nn][Aa][Mm][Ee]:).*", "\\1", first_name_line)
+    } else {
+      stop("No NAME or Name entries found in MSP file")
+    }
+  }
+  entry.nms<-sapply(strsplit(mspcontent1[grep(paste0("^",name_pattern),mspcontent1)],name_pattern), function(x) x[2])
+  
   cas.nms<-sapply(strsplit(mspcontent1[grep("CASNO:",mspcontent1)],"CASNO:"), function(x) x[2])
   cas.nms<-casno_reformating_string(cas.nms,hypon = F)
-  comments.nms<-sapply(strsplit(mspcontent1[grep("Comment:",mspcontent1)],"Comment:"), function(x) x[2])
+  
+  # Handle optional Comment field - ensure length matches entries
+  comment_lines <- grep("Comment:",mspcontent1)
+  if(length(comment_lines) > 0) {
+    comments.nms<-sapply(strsplit(mspcontent1[comment_lines],"Comment:"), function(x) x[2])
+    # Ensure comments match entry count
+    if(length(comments.nms) != length(entry.nms)) {
+      if(length(comments.nms) < length(entry.nms)) {
+        # Pad with NAs if fewer comments than entries
+        comments.nms <- c(comments.nms, rep(NA, length(entry.nms) - length(comments.nms)))
+      } else {
+        # Truncate if more comments than entries
+        comments.nms <- comments.nms[1:length(entry.nms)]
+      }
+    }
+  } else {
+    comments.nms <- rep(NA, length(entry.nms))
+  }
   rez<-matrix(NA, nrow=length(entry.nms), ncol=length(att.nms), dimnames=list(NULL,att.nms ))
-  starts<-grep("Name:", mspcontent)
+  starts<-grep(paste0("^",name_pattern), mspcontent)
   # Check if any entries were found
   if(length(starts) == 0) {
     stop("No entries found in MSP file. Check if the file format is correct.")
@@ -1404,23 +1437,64 @@ msp_to_msl<-function(mspfile=NULL,RI_retrieve=T,RI_column_type=c("5ms","wax"),sa
   } else {
     stops<-c(starts[1:(length(starts)-1)]+diff(starts)-1,length(mspcontent))
   }
+  message("Parsing MSP entries...")
+  pb <- txtProgressBar(min = 0, max = length(starts), style = 3)
   for (i in 1:length(starts)){
     tmp<-mspcontent[starts[i]:stops[i]]
     sapply(strsplit(tmp[grep(":",tmp)],":"), function(x) rez[i,x[1]]<<-x[2])
+    setTxtProgressBar(pb, i)
   }
-  rez[,"Comment"]=comments.nms
+  close(pb)
+  
+  # Convert to data frame first
   rez<-data.frame(rez,stringsAsFactors =F )
   rez[,"SOURCE"]=mspfile
-  test_col=testcolume(rez,c("Name","Comment","MW","RI","Formula","CASNO","SOURCE","Num.peaks"))
-  if (length(test_col$failcol)>0){
-    for (col in test_col$failcol){
-      
-      rez[[col]]=NA
-      
+  
+  # Handle Comment column assignment more carefully
+  if("Comment" %in% colnames(rez)) {
+    # Column exists from parsing, assign if we have valid comments
+    if(length(comments.nms) == nrow(rez)) {
+      rez[,"Comment"] = comments.nms
+    }
+  } else {
+    # Column doesn't exist, add it
+    rez[,"Comment"] = comments.nms
+  }
+  
+  # Map common column name variations
+  colnames(rez) <- gsub("^NAME$", "Name", colnames(rez))
+  colnames(rez) <- gsub("^FORM$", "Formula", colnames(rez))
+  colnames(rez) <- gsub("^FORMULA$", "Formula", colnames(rez))
+  colnames(rez) <- gsub("^NUM PEAKS$", "Num.peaks", colnames(rez))
+  colnames(rez) <- gsub("^Num Peaks$", "Num.peaks", colnames(rez))
+  colnames(rez) <- gsub("^Num peaks$", "Num.peaks", colnames(rez))
+  colnames(rez) <- gsub("^EXACTMASS$", "MW", colnames(rez))
+  colnames(rez) <- gsub("^RETENTIONINDEX$", "RI", colnames(rez))
+  
+  # Debug: show available columns
+  message("Available columns after mapping: ", paste(colnames(rez), collapse=", "))
+  
+  # Ensure all required columns exist before selection
+  required_cols <- c("Name","Comment","MW","RI","Formula","CASNO","SOURCE","Num.peaks")
+  missing_cols <- setdiff(required_cols, colnames(rez))
+  
+  if(length(missing_cols) > 0) {
+    message("Adding missing columns: ", paste(missing_cols, collapse=", "))
+    for(col in missing_cols) {
+      rez[[col]] <- NA
     }
   }
   
-  rez<-rez[,c("Name","Comment","MW","RI","Formula","CASNO","SOURCE","Num.peaks")]
+  test_col=testcolume(rez,required_cols)
+  if (length(test_col$failcol)>0){
+    for (col in test_col$failcol){
+      rez[[col]]=NA
+    }
+  }
+  
+  # Safe column selection - only select columns that exist
+  final_cols <- intersect(required_cols, colnames(rez))
+  rez<-rez[,final_cols]
   rez<-casno_reformating(rez,hypon = F)
   if (RI_retrieve){
     message(paste("Retrieving RI information... Selected colomn type:",RI_column_type))
@@ -1465,7 +1539,9 @@ msp_to_msl<-function(mspfile=NULL,RI_retrieve=T,RI_column_type=c("5ms","wax"),sa
     }
   }
   if(save_new_msp){
+    message("Updating MSP content with retrieved RI values...")
     mspcontent_new<-character(0)
+    pb2 <- txtProgressBar(min = 0, max = length(starts), style = 3)
     for (i in 1:length(starts)){
       tmp<-mspcontent[starts[i]:stops[i]]
       rez$RI[rez$CASNO==cas.nms[i]]
@@ -1488,25 +1564,58 @@ msp_to_msl<-function(mspfile=NULL,RI_retrieve=T,RI_column_type=c("5ms","wax"),sa
       }
       
       mspcontent_new<-c(mspcontent_new,tmp)
+      setTxtProgressBar(pb2, i)
     }
+    close(pb2)
     newmspfile<-paste0(gsub(".MSP","",mspfile,ignore.case = T),"_RI_",RI_column_type,".MSP")
     writeLines(mspcontent_new,newmspfile)
     message("New MSP file have been created!")
   }
   
   
-  colnames(rez)<-c("NAME","COMMENT","MW","RI","FORM","CASNO","SOURCE","NUM PEAKS")
+  # Ensure we have the right columns for MSL generation
+  required_msl_cols <- c("NAME","COMMENT","MW","RI","FORM","CASNO","SOURCE","NUM PEAKS")
+  
+  # Map our standardized names to MSL expected names
+  if("Name" %in% colnames(rez)) colnames(rez)[colnames(rez)=="Name"] <- "NAME"
+  if("Comment" %in% colnames(rez)) colnames(rez)[colnames(rez)=="Comment"] <- "COMMENT"  
+  if("Formula" %in% colnames(rez)) colnames(rez)[colnames(rez)=="Formula"] <- "FORM"
+  if("Num.peaks" %in% colnames(rez)) colnames(rez)[colnames(rez)=="Num.peaks"] <- "NUM PEAKS"
+  
+  # Ensure all required MSL columns exist
+  for(col in required_msl_cols) {
+    if(!col %in% colnames(rez)) {
+      rez[[col]] <- NA
+    }
+  }
   
       
-  # Use parallel processing with proper error handling
+  # Use pbapply for progress bar with proper error handling
+  message("Generating MSL content...")
   tryCatch({
-    if (!requireNamespace("parallel", quietly = TRUE)) {
-      stop("parallel package not available")
+    if (!requireNamespace("pbapply", quietly = TRUE)) {
+      message("pbapply not available, using sequential processing with progress bar")
+      pb3 <- txtProgressBar(min = 0, max = nrow(rez), style = 3)
+      SumMSL <- sapply(1:nrow(rez), function(i) {
+        result <- generateMSL_par(i, rez, starts, stops, mspcontent)
+        setTxtProgressBar(pb3, i)
+        return(result)
+      })
+      close(pb3)
+    } else {
+      library(pbapply)
+      library(parallel)
+      SumMSL <- pbsapply(1:nrow(rez), generateMSL_par, rez, starts, stops, mspcontent, cl=autoStopCluster(makeCluster(detectCores())))
     }
-    SumMSL <- parallel::parSapply(cl=autoStopCluster(parallel::makeCluster(parallel::detectCores())),1:nrow(rez),generateMSL_par,rez,starts,stops,mspcontent)
   }, error = function(e) {
-    message("Warning: Parallel processing failed, using sequential processing: ", e$message)
-    SumMSL <- sapply(1:nrow(rez), generateMSL_par, rez, starts, stops, mspcontent)
+    message("Warning: Parallel processing failed, using sequential processing with progress bar: ", e$message)
+    pb3 <- txtProgressBar(min = 0, max = nrow(rez), style = 3)
+    SumMSL <- sapply(1:nrow(rez), function(i) {
+      result <- generateMSL_par(i, rez, starts, stops, mspcontent)
+      setTxtProgressBar(pb3, i)
+      return(result)
+    })
+    close(pb3)
   })
   SumMSL=paste0(SumMSL,collapse = "\n")
   sink(paste0(gsub(".MSP","",mspfile),".MSL"))
@@ -1533,14 +1642,70 @@ generateMSL_par<- function(i,rez,starts,stops,mspcontent){
   }
   
   tmp<-mspcontent[starts[i]:stops[i]]
-  tmp<-tmp[(which(tmp==paste0("Num peaks: ",as.numeric(entry[1,"NUM PEAKS"])))+1):length(tmp)]
+  
+  # Find the peaks line with various formats
+  num_peaks <- as.numeric(entry[1,"NUM PEAKS"])
+  peak_patterns <- c(
+    paste0("Num peaks: ", num_peaks),
+    paste0("NUM PEAKS: ", num_peaks), 
+    paste0("NUM PEAKS:  ", num_peaks),
+    paste0("Num Peaks: ", num_peaks)
+  )
+  
+  peak_line_idx <- NULL
+  for(pattern in peak_patterns) {
+    peak_line_idx <- which(tmp == pattern)
+    if(length(peak_line_idx) > 0) break
+  }
+  
+  if(length(peak_line_idx) == 0) {
+    # Fallback: find any line containing the number of peaks
+    peak_line_idx <- grep(paste0(num_peaks, "[ ]*$"), tmp)
+  }
+  
+  if(length(peak_line_idx) > 0) {
+    tmp <- tmp[(peak_line_idx[1] + 1):length(tmp)]
+  } else {
+    # If we can't find the peaks line, try to find the first numeric line
+    numeric_lines <- grep("^\\s*\\(", tmp)
+    if(length(numeric_lines) > 0) {
+      tmp <- tmp[numeric_lines[1]:length(tmp)]
+    }
+  }
   tmp<-tmp[tmp!=""]
-  ionslist=data.frame(t(sapply(tmp, function(x) strsplit(x," ")[[1]])),stringsAsFactors = F)
-  ionslist[,2]=as.numeric(ionslist[,2])
-  ionslist[,2]=as.character(round(ionslist[,2]/max(ionslist[,2])*1000,digits=0))
+  
+  # Handle different mass spec data formats
+  if(length(tmp) > 0) {
+    # Check if data is in parentheses format like "( 85    8) ( 86   35)"
+    if(any(grepl("^\\s*\\(", tmp))) {
+      # Extract numbers from parentheses format
+      ion_data <- unlist(strsplit(paste(tmp, collapse=" "), "\\)\\s*\\(|\\(|\\)"))
+      ion_data <- ion_data[ion_data != ""]
+      ion_pairs <- strsplit(trimws(ion_data), "\\s+")
+      ionslist <- data.frame(t(sapply(ion_pairs, function(x) if(length(x) >= 2) x[1:2] else c(NA, NA))), stringsAsFactors = FALSE)
+    } else {
+      # Handle space-separated format like "12 37.97"
+      ionslist <- data.frame(t(sapply(tmp, function(x) {
+        parts <- strsplit(trimws(x), "\\s+")[[1]]
+        if(length(parts) >= 2) parts[1:2] else c(NA, NA)
+      })), stringsAsFactors = FALSE)
+    }
+  } else {
+    ionslist <- data.frame(X1 = character(0), X2 = character(0), stringsAsFactors = FALSE)
+  }
+  
+  # Remove rows with NAs
+  ionslist <- ionslist[!is.na(ionslist[,1]) & !is.na(ionslist[,2]), ]
+  
+  if(nrow(ionslist) > 0) {
+    ionslist[,2]=as.numeric(ionslist[,2])
+    ionslist[,2]=as.character(round(ionslist[,2]/max(ionslist[,2])*1000,digits=0))
+  }
   
   ionnumperline=1 
-  for (ions in 1:nrow(ionslist)){
+  
+  if(nrow(ionslist) > 0) {
+    for (ions in 1:nrow(ionslist)){
     if(ionnumperline==1){
       linetemp=""
       linetemp=paste0("(",paste0(sprintf("% 4s", ionslist[ions,]),collapse = " ")  ,")") 
@@ -1557,6 +1722,7 @@ generateMSL_par<- function(i,rez,starts,stops,mspcontent){
       
     }
   }
+  } # Close the if(nrow(ionslist) > 0) bracket
   
   writeLinetmp[[line]]=linetemp
   line=line+1
