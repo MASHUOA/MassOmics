@@ -1978,7 +1978,7 @@ Par_peakintegrate<-function(h,library_file,findScanTime,raw_data,intensity_type,
   if((R.Ion+Ion.bin)>=mzacqrangeU) EICmzupper=mzacqrangeU
   
   if (sum(EICupper<scanrangeL,EIClower>scanrangeU,(EICmzlower)>mzacqrangeU,(EICmzupper)<mzacqrangeL,round(EIClower)==round(EICupper),
-    round(EICmzlower)==round(EICmzupper),na.rm = T)>=1){
+    round(EICmzlower,1)==round(EICmzupper,1),na.rm = T)>=1){
     Peakvalue=0
     return(Peakvalue)
   }else{
@@ -2015,7 +2015,7 @@ Par_peakintegrate_slow<-function(h,library_file,findScanTime,raw_data,intensity_
   if((R.Ion+Ion.bin)>=mzacqrangeU) EICmzupper=mzacqrangeU
   
   if (sum(EICupper<scanrangeL,EIClower>scanrangeU,(EICmzlower)>mzacqrangeU,(EICmzupper)<mzacqrangeL,round(EIClower)==round(EICupper),
-    round(EICmzlower)==round(EICmzupper),na.rm = T)>=1) {
+    round(EICmzlower,1)==round(EICmzupper,1),na.rm = T)>=1) {
     Peakvalue=0
     abundance=data.frame(rt=NA,intensity=NA)
   }else{
